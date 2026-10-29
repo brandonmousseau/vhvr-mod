@@ -74,6 +74,15 @@ namespace ValheimVRMod.Scripts {
             leftFoot = new GameObject();
             rightFoot = new GameObject();
             player = GetComponent<Player>();
+            // The remote IK targets are kept in the space of the player root, so that they move with the root
+            // whenever it moves (ZSyncTransform moves it in FixedUpdate in no fixed order with this script).
+            // The local player replaces camera and hands and only uses world poses, so this is harmless there.
+            camera.transform.SetParent(transform, false);
+            leftHand.transform.SetParent(transform, false);
+            rightHand.transform.SetParent(transform, false);
+            pelvis.transform.SetParent(transform, false);
+            leftFoot.transform.SetParent(transform, false);
+            rightFoot.transform.SetParent(transform, false);
         }
 
         void Start()
@@ -277,7 +286,10 @@ namespace ValheimVRMod.Scripts {
             deltaTimeCounter += dt;
             deltaTimeCounter = Mathf.Min(deltaTimeCounter, 2f);
 
-            extractAndUpdate(pkg, ref camera, ref clientTempRelPosCamera, hasTempRelPos);
+            // The owner sends world offsets from its root; its root rotation turns them into the root's space.
+            Quaternion toOwnerRoot = Quaternion.Inverse(zdo.GetRotation());
+
+            extractAndUpdate(pkg, camera, ref clientTempRelPosCamera, hasTempRelPos, toOwnerRoot);
 
             if (!hasMoreData(pkg))
             {
@@ -290,9 +302,9 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            extractAndUpdate(pkg, ref leftHand, ref clientTempRelPosLeft, hasTempRelPos);
-            extractAndUpdate(pkg, ref rightHand, ref clientTempRelPosRight, hasTempRelPos);
-            extractAndUpdate(pkg, ref pelvis, ref clientTempRelPosPelvis, hasTempRelPos);
+            extractAndUpdate(pkg, leftHand, ref clientTempRelPosLeft, hasTempRelPos, toOwnerRoot);
+            extractAndUpdate(pkg, rightHand, ref clientTempRelPosRight, hasTempRelPos, toOwnerRoot);
+            extractAndUpdate(pkg, pelvis, ref clientTempRelPosPelvis, hasTempRelPos, toOwnerRoot);
 
             maybeAddVrik();
             if (vrikSync != null)
@@ -312,10 +324,10 @@ namespace ValheimVRMod.Scripts {
             }
             if (hasMoreData(pkg))
             {
-                ExtractAndSmoothUpdatePositionRelativeToPlayer(pkg, ref leftFoot, ref clientTempRelPosLeftFoot, receivingFootData);
-                updateRotation(leftFoot, pkg.ReadQuaternion());
-                ExtractAndSmoothUpdatePositionRelativeToPlayer(pkg, ref rightFoot, ref clientTempRelPosRightFoot, receivingFootData);
-                updateRotation(rightFoot, pkg.ReadQuaternion());
+                ExtractAndSmoothUpdateLocalPosition(pkg, leftFoot, ref clientTempRelPosLeftFoot, receivingFootData, toOwnerRoot);
+                updateLocalRotation(leftFoot, toOwnerRoot * pkg.ReadQuaternion());
+                ExtractAndSmoothUpdateLocalPosition(pkg, rightFoot, ref clientTempRelPosRightFoot, receivingFootData, toOwnerRoot);
+                updateLocalRotation(rightFoot, toOwnerRoot * pkg.ReadQuaternion());
                 receivingFootData = true;
                 if (vrikSync != null)
                 {
@@ -408,10 +420,10 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private void ExtractAndSmoothUpdatePositionRelativeToPlayer(
-            ZPackage pkg, ref GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos)
+        private static void ExtractAndSmoothUpdateLocalPosition(
+            ZPackage pkg, GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos, Quaternion toOwnerRoot)
         {
-            var position = pkg.ReadVector3();
+            var position = toOwnerRoot * pkg.ReadVector3();
             if (!hasTempRelPos)
             {
                 tempRelPos = position;
@@ -423,13 +435,17 @@ namespace ValheimVRMod.Scripts {
                 position = tempRelPos;
             }
 
-            updatePosition(obj, position + player.transform.position);
+            if (Vector3.Distance(obj.transform.localPosition, position) > MIN_CHANGE)
+            {
+                obj.transform.localPosition = position;
+            }
         }
 
-        private void extractAndUpdate(ZPackage pkg, ref GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos)
+        private static void extractAndUpdate(
+            ZPackage pkg, GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos, Quaternion toOwnerRoot)
         {
-            ExtractAndSmoothUpdatePositionRelativeToPlayer(pkg, ref obj, ref tempRelPos, hasTempRelPos);
-            updateRotation(obj, pkg.ReadQuaternion());
+            ExtractAndSmoothUpdateLocalPosition(pkg, obj, ref tempRelPos, hasTempRelPos, toOwnerRoot);
+            updateLocalRotation(obj, toOwnerRoot * pkg.ReadQuaternion());
             var velocity = pkg.ReadVector3(); // Deprecated
         }
 
@@ -438,19 +454,11 @@ namespace ValheimVRMod.Scripts {
             return pkg.m_reader.BaseStream.Position < pkg.GetArray().Length;
         }
 
-        private static void updatePosition(GameObject obj, Vector3 position)
+        private static void updateLocalRotation(GameObject obj, Quaternion rotation)
         {
-            if (Vector3.Distance(obj.transform.position, position) > MIN_CHANGE)
+            if (Quaternion.Angle(obj.transform.localRotation, rotation) > MIN_CHANGE)
             {
-                obj.transform.position = position;
-            }
-        }
-
-        private static void updateRotation(GameObject obj, Quaternion rotation)
-        {
-            if (Quaternion.Angle(obj.transform.rotation, rotation) > MIN_CHANGE)
-            {
-                obj.transform.rotation = Quaternion.Slerp(obj.transform.rotation, rotation, 0.2f);
+                obj.transform.localRotation = Quaternion.Slerp(obj.transform.localRotation, rotation, 0.2f);
             }
         }
 
