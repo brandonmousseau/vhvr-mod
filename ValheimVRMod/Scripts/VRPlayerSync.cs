@@ -12,7 +12,6 @@ namespace ValheimVRMod.Scripts {
         private VRIK vrikSync;
 
         const float MIN_CHANGE = 0.001f;
-        const float SMOOTHING_PER_FIXED_STEP = 0.2f;
 
         public GameObject camera = null;
         public GameObject rightHand = null;
@@ -45,12 +44,12 @@ namespace ValheimVRMod.Scripts {
         private Vector3 ownerVelocityRight = Vector3.zero;
 
         private bool hasTempRelPos = false;
-        private RemoteTarget remoteCamera;
-        private RemoteTarget remoteLeftHand;
-        private RemoteTarget remoteRightHand;
-        private RemoteTarget remotePelvis;
-        private RemoteTarget remoteLeftFoot;
-        private RemoteTarget remoteRightFoot;
+        private Vector3 clientTempRelPosCamera = Vector3.zero;
+        private Vector3 clientTempRelPosLeft = Vector3.zero;
+        private Vector3 clientTempRelPosRight = Vector3.zero;
+        private Vector3 clientTempRelPosPelvis = Vector3.zero;
+        private Vector3 clientTempRelPosLeftFoot = Vector3.zero;
+        private Vector3 clientTempRelPosRightFoot = Vector3.zero;
 
         private uint lastDataRevision = 0;
         private float deltaTimeCounter = 0f;
@@ -75,37 +74,15 @@ namespace ValheimVRMod.Scripts {
             leftFoot = new GameObject();
             rightFoot = new GameObject();
             player = GetComponent<Player>();
-            remoteCamera = new RemoteTarget(camera);
-            remoteLeftHand = new RemoteTarget(leftHand);
-            remoteRightHand = new RemoteTarget(rightHand);
-            remotePelvis = new RemoteTarget(pelvis);
-            remoteLeftFoot = new RemoteTarget(leftFoot);
-            remoteRightFoot = new RemoteTarget(rightFoot);
-        }
-
-        // The IK targets of a remote player are placed here rather than as the data is read in FixedUpdate,
-        // against where the player is drawn this frame. The body of the player moves every frame (interpolated
-        // between physics steps), so targets placed only on physics steps would lag behind it and then catch up
-        // again, shaking the spine to and fro at the rate the steps and frames beat against each other, which
-        // the cloth of a cape turns into a violent flapping. VRIK solves in LateUpdate, after this.
-        private void Update()
-        {
-            if (!hasReceivedData || isOwner() || !isValid())
-            {
-                return;
-            }
-            // The smoothing that used to be applied once per physics step, as its share of this frame.
-            float t = 1 - Mathf.Pow(1 - SMOOTHING_PER_FIXED_STEP, Time.deltaTime / Time.fixedDeltaTime);
-            Vector3 playerPosition = player.transform.position;
-            remoteCamera.Apply(playerPosition, t);
-            remoteLeftHand.Apply(playerPosition, t);
-            remoteRightHand.Apply(playerPosition, t);
-            remotePelvis.Apply(playerPosition, t);
-            if (receivingFootData)
-            {
-                remoteLeftFoot.Apply(playerPosition, t);
-                remoteRightFoot.Apply(playerPosition, t);
-            }
+            // The remote IK targets are kept in the space of the player root, so that they move with the root
+            // whenever it moves (ZSyncTransform moves it in FixedUpdate in no fixed order with this script).
+            // The local player replaces camera and hands and only uses world poses, so this is harmless there.
+            camera.transform.SetParent(transform, false);
+            leftHand.transform.SetParent(transform, false);
+            rightHand.transform.SetParent(transform, false);
+            pelvis.transform.SetParent(transform, false);
+            leftFoot.transform.SetParent(transform, false);
+            rightFoot.transform.SetParent(transform, false);
         }
 
         void Start()
@@ -309,7 +286,10 @@ namespace ValheimVRMod.Scripts {
             deltaTimeCounter += dt;
             deltaTimeCounter = Mathf.Min(deltaTimeCounter, 2f);
 
-            extractTarget(pkg, remoteCamera, hasTempRelPos);
+            // The owner sends world offsets from its root; its root rotation turns them into the root's space.
+            Quaternion toOwnerRoot = Quaternion.Inverse(zdo.GetRotation());
+
+            extractAndUpdate(pkg, camera, ref clientTempRelPosCamera, hasTempRelPos, toOwnerRoot);
 
             if (!hasMoreData(pkg))
             {
@@ -322,9 +302,9 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            extractTarget(pkg, remoteLeftHand, hasTempRelPos);
-            extractTarget(pkg, remoteRightHand, hasTempRelPos);
-            extractTarget(pkg, remotePelvis, hasTempRelPos);
+            extractAndUpdate(pkg, leftHand, ref clientTempRelPosLeft, hasTempRelPos, toOwnerRoot);
+            extractAndUpdate(pkg, rightHand, ref clientTempRelPosRight, hasTempRelPos, toOwnerRoot);
+            extractAndUpdate(pkg, pelvis, ref clientTempRelPosPelvis, hasTempRelPos, toOwnerRoot);
 
             maybeAddVrik();
             if (vrikSync != null)
@@ -344,8 +324,10 @@ namespace ValheimVRMod.Scripts {
             }
             if (hasMoreData(pkg))
             {
-                remoteLeftFoot.SetTarget(pkg.ReadVector3(), pkg.ReadQuaternion(), receivingFootData);
-                remoteRightFoot.SetTarget(pkg.ReadVector3(), pkg.ReadQuaternion(), receivingFootData);
+                ExtractAndSmoothUpdateLocalPosition(pkg, leftFoot, ref clientTempRelPosLeftFoot, receivingFootData, toOwnerRoot);
+                updateLocalRotation(leftFoot, toOwnerRoot * pkg.ReadQuaternion());
+                ExtractAndSmoothUpdateLocalPosition(pkg, rightFoot, ref clientTempRelPosRightFoot, receivingFootData, toOwnerRoot);
+                updateLocalRotation(rightFoot, toOwnerRoot * pkg.ReadQuaternion());
                 receivingFootData = true;
                 if (vrikSync != null)
                 {
@@ -438,9 +420,32 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private static void extractTarget(ZPackage pkg, RemoteTarget target, bool hasTarget)
+        private static void ExtractAndSmoothUpdateLocalPosition(
+            ZPackage pkg, GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos, Quaternion toOwnerRoot)
         {
-            target.SetTarget(pkg.ReadVector3(), pkg.ReadQuaternion(), hasTarget);
+            var position = toOwnerRoot * pkg.ReadVector3();
+            if (!hasTempRelPos)
+            {
+                tempRelPos = position;
+            }
+
+            if (Vector3.Distance(tempRelPos, position) > MIN_CHANGE)
+            {
+                tempRelPos = Vector3.Lerp(tempRelPos, position, 0.2f);
+                position = tempRelPos;
+            }
+
+            if (Vector3.Distance(obj.transform.localPosition, position) > MIN_CHANGE)
+            {
+                obj.transform.localPosition = position;
+            }
+        }
+
+        private static void extractAndUpdate(
+            ZPackage pkg, GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos, Quaternion toOwnerRoot)
+        {
+            ExtractAndSmoothUpdateLocalPosition(pkg, obj, ref tempRelPos, hasTempRelPos, toOwnerRoot);
+            updateLocalRotation(obj, toOwnerRoot * pkg.ReadQuaternion());
             var velocity = pkg.ReadVector3(); // Deprecated
         }
 
@@ -449,43 +454,11 @@ namespace ValheimVRMod.Scripts {
             return pkg.m_reader.BaseStream.Position < pkg.GetArray().Length;
         }
 
-        // An IK target of a remote player: its position relative to the player and its rotation, eased each frame
-        // towards the latest that the owner sent.
-        private class RemoteTarget
+        private static void updateLocalRotation(GameObject obj, Quaternion rotation)
         {
-            private readonly GameObject obj;
-            private Vector3 targetRelativePosition;
-            private Quaternion targetRotation = Quaternion.identity;
-            private Vector3 relativePosition;
-
-            public RemoteTarget(GameObject obj)
+            if (Quaternion.Angle(obj.transform.localRotation, rotation) > MIN_CHANGE)
             {
-                this.obj = obj;
-            }
-
-            // Without a previous target, the target is jumped to rather than eased towards.
-            public void SetTarget(Vector3 relativePosition, Quaternion rotation, bool hasTarget)
-            {
-                targetRelativePosition = relativePosition;
-                targetRotation = rotation;
-                if (!hasTarget)
-                {
-                    this.relativePosition = relativePosition;
-                    obj.transform.rotation = rotation;
-                }
-            }
-
-            public void Apply(Vector3 playerPosition, float t)
-            {
-                relativePosition =
-                    Vector3.Distance(relativePosition, targetRelativePosition) > MIN_CHANGE ?
-                        Vector3.Lerp(relativePosition, targetRelativePosition, t) :
-                        targetRelativePosition;
-                obj.transform.position = playerPosition + relativePosition;
-                if (Quaternion.Angle(obj.transform.rotation, targetRotation) > MIN_CHANGE)
-                {
-                    obj.transform.rotation = Quaternion.Slerp(obj.transform.rotation, targetRotation, t);
-                }
+                obj.transform.localRotation = Quaternion.Slerp(obj.transform.localRotation, rotation, 0.2f);
             }
         }
 
