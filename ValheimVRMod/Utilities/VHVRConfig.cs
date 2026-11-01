@@ -31,6 +31,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> followCameraDistance;
         private static ConfigEntry<bool> flatscreenPostEffects;
         private static ConfigEntry<bool> displayVRGUIOnFlatScreen;
+        private static ConfigEntry<bool> removeRemoteMagicCloth;
 
         // General Settings
         private static ConfigEntry<float> playerMinEyeHeight;
@@ -437,6 +438,11 @@ namespace ValheimVRMod.Utilities
                                      true,
                                      "Follow/Spectator/Stabilized only: show the VR GUI panel, including when it is attached to" +
                                      " the hand, and the laser pointers in the flat screen view. The main menu is always shown.");
+            removeRemoteMagicCloth = config.Bind("Graphics",
+                                     "RemoveRemoteMagicCloth",
+                                     true,
+                                     "Turn off the cloth physics of capes on other VR players, whose capes can jitter, so that the capes stay" +
+                                     " rigid on the back.");
         }
 
         private static void InitializeGeneralSettings()
@@ -1378,6 +1384,11 @@ namespace ValheimVRMod.Utilities
         public static float FlatscreenSmoothingScale()
         {
             return flatscreenSmoothing.Value * 2f;
+        }
+
+        public static bool RemoveRemoteMagicCloth()
+        {
+            return removeRemoteMagicCloth.Value;
         }
 
         public static float FollowCameraDistance()

@@ -648,6 +648,16 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Lets the cloth of newly equipped items on a remote VR player be removed too.
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetupCloth))]
+    class PatchSetupCloth
+    {
+        static void Postfix(VisEquipment __instance)
+        {
+            __instance.GetComponent<RemoteClothRemover>()?.OnClothSetup();
+        }
+    }
+
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.AttachItem))]
     class PatchAttachItem
     {
