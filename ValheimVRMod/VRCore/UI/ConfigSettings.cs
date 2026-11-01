@@ -219,20 +219,25 @@ namespace ValheimVRMod.VRCore.UI {
             int sectionCount = 0;
             foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> keyValuePair in VHVRConfig.config) {
 
-                // skip entries with section "Immutable", these are not changeable at runtime
-                if (keyValuePair.Key.Section == "Immutable") {
-                    continue;
+                string section = keyValuePair.Key.Section;
+                // Entries with section "Immutable" are not changeable at runtime. Those that can be changed for the
+                // next launch lead the General tab, as they are bound before every other section.
+                if (section == "Immutable") {
+                    if (!VHVRConfig.IsRestartRequiredEntry(keyValuePair.Value)) {
+                        continue;
+                    }
+                    section = "General";
                 }
                 // These have a tab of their own, see CreateFullBodyTrackingTab().
                 if (VHVRConfig.IsFullBodyTrackingEntry(keyValuePair.Value)) {
                     continue;
                 }
-                if (!orderedConfig.ContainsKey(keyValuePair.Key.Section)) {
-                    orderedConfig.Add(keyValuePair.Key.Section, new Dictionary<string, ConfigEntryBase>());
+                if (!orderedConfig.ContainsKey(section)) {
+                    orderedConfig.Add(section, new Dictionary<string, ConfigEntryBase>());
                     sectionCount++;
                 }
 
-                orderedConfig[keyValuePair.Key.Section][keyValuePair.Key.Key] = keyValuePair.Value;
+                orderedConfig[section][keyValuePair.Key.Key] = keyValuePair.Value;
             }
 
             // The Mods tab is only offered if there is a mod configuration manager to open in it.
@@ -450,6 +455,10 @@ namespace ValheimVRMod.VRCore.UI {
             button.onClick.AddListener(modConfigurationManagerTab.ToggleOpen);
         }
 
+        private static string DisplayName(KeyValuePair<string, ConfigEntryBase> configValue) {
+            return VHVRConfig.IsRestartRequiredEntry(configValue.Value) ? configValue.Key + " (requires restart)" : configValue.Key;
+        }
+
         /// <summary>
         /// Create a Settings Element out of a Config Entry
         /// </summary>
@@ -524,7 +533,7 @@ namespace ValheimVRMod.VRCore.UI {
             var sliderObj = Object.Instantiate(sliderPrefab, parent);
             var configComponent = sliderObj.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;  
-            sliderObj.transform.Find("Label").GetComponent<TMP_Text>().text = configValue.Key;
+            sliderObj.transform.Find("Label").GetComponent<TMP_Text>().text = DisplayName(configValue);
             sliderObj.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.right * 60;
             var slider = sliderObj.GetComponentInChildren<Slider>();
             slider.minValue = float.Parse(type.GetProperty("MinValue").GetValue(acceptableValues).ToString());
@@ -599,7 +608,7 @@ namespace ValheimVRMod.VRCore.UI {
             var configComponent = chooserObj.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;
             var configKeyText = chooserObj.transform.Find("LabelLeft").GetComponent<TMP_Text>();
-            configKeyText.text = configValue.Key;
+            configKeyText.text = DisplayName(configValue);
             if (configValue.Key == VHVRConfig.GesturedLocomotionLabel())
             {
                 var distance = GesturedLocomotionManager.distanceTraveled;
@@ -638,7 +647,7 @@ namespace ValheimVRMod.VRCore.UI {
             configComponent.saveAction = param => {
                 configValue.Value.SetSerializedValue(toggle.GetComponent<Toggle>().isOn ? "true" : "false");
             };
-            toggle.GetComponentInChildren<TMP_Text>().text = configValue.Key;
+            toggle.GetComponentInChildren<TMP_Text>().text = DisplayName(configValue);
             toggle.GetComponent<Toggle>().isOn = configValue.Value.GetSerializedValue() == "true";
             toggle.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.right * 100;
         }
