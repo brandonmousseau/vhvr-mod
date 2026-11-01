@@ -118,6 +118,7 @@ namespace ValheimVRMod.Scripts {
 
             Destroy(vrikSync);
             vrikSync = null;
+            Destroy(GetComponent<RemoteClothRemover>());
         }
 
         public WeaponWield.TwoHandedState GetTwoHandedState()
@@ -471,6 +472,10 @@ namespace ValheimVRMod.Scripts {
                 VrikCreator.initialize(
                     gameObject, leftHand.transform, rightHand.transform, camera.transform, pelvis.transform, leftFoot.transform, rightFoot.transform);
             VrikCreator.resetVrikHandTransform(player);
+            if (vrikSync != null && GetComponent<RemoteClothRemover>() == null)
+            {
+                gameObject.AddComponent<RemoteClothRemover>();
+            }
         }
 
         private bool isOwner()
