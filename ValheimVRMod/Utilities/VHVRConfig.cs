@@ -150,10 +150,6 @@ namespace ValheimVRMod.Utilities
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
-        private static ConfigEntry<bool> handsCameraForward;
-        private static ConfigEntry<bool> renderWorkOncePerFrame;
-        private static ConfigEntry<bool> leanUiCameras;
-        private static ConfigEntry<bool> mergeUiCameras;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
         private static ConfigEntry<float> vignetteStrength;
@@ -973,35 +969,6 @@ namespace ValheimVRMod.Utilities
                                               " cost. While you can enable SSAO and UseAmplifyOcclusion simultaneously, it is" +
                                               " not recommended. SSAO impacts performance significantly, which is bad for VR especially. Therefore" +
                                               " you should disable SSAO in the graphics settings of the game when using this.");
-            handsCameraForward = config.Bind("Graphics",
-                                              "HandsCameraForward",
-                                              false,
-                                              "Draws the hands camera (your hands and what they hold, drawn over the world) with forward rendering" +
-                                              " instead of copying the VR camera's deferred path, which sets up a full deferred lighting pass per eye" +
-                                              " just for the hands. Hands may be lit slightly differently. Applies at once.");
-            renderWorkOncePerFrame = config.Bind("Graphics",
-                                              "RenderWorkOncePerFrame",
-                                              true,
-                                              "Does the per-render work of the held weapon (two-handed wield, weapon hit box) and of the GUI panel" +
-                                              " once per frame instead of after every camera render (about 10 a frame in VR: two eyes times several" +
-                                              " cameras). The results are the same; turn it off only to compare, or if a held weapon or the GUI panel" +
-                                              " behaves differently than before. Applies at once.");
-            leanUiCameras = config.Bind("Graphics",
-                                              "LeanUiCameras",
-                                              false,
-                                              "Makes the two UI cameras (the GUI panel camera and the world space UI camera, each drawn once per eye" +
-                                              " over the world) cheaper: no depth texture or motion vectors copied from the VR camera, no occlusion" +
-                                              " culling and no shadows while they render. They draw only unlit UI, so nothing should look different;" +
-                                              " if any UI element looks wrong (missing, unlit, flickering) turn this off. Applies at once.");
-            mergeUiCameras = config.Bind("Graphics",
-                                              "MergeUiCameras",
-                                              true,
-                                              "Draws the GUI panel and the world space UI (enemy bars, hover names, crosshair, quick menus, vignette)" +
-                                              " with the hands camera instead of two cameras of their own, each of which culls the whole scene once" +
-                                              " per eye. Same order as before (world, GUI panel, world space UI, hands); world space UI nearer than a" +
-                                              " hand now shows over it, and the comfort vignette also darkens the hands. The hands camera then renders" +
-                                              " forward, as with HandsCameraForward. The panel is drawn relative to the camera rig, so it doesn't shake" +
-                                              " far from the world origin. Turn off to go back to the separate cameras. Applies at once.");
             taaSharpenAmmount = config.Bind("Graphics",
                                               "TAASharpenAmmount",
                                               0.3f,
@@ -1520,22 +1487,26 @@ namespace ValheimVRMod.Utilities
 
         public static bool HandsCameraForward()
         {
-            return handsCameraForward != null && handsCameraForward.Value;
+            // TODO: remove after testing
+            return true;
         }
 
         public static bool RenderWorkOncePerFrame()
         {
-            return renderWorkOncePerFrame == null || renderWorkOncePerFrame.Value;
+            // TODO: remove after testing
+            return true;
         }
 
         public static bool LeanUiCameras()
         {
-            return leanUiCameras != null && leanUiCameras.Value;
+            // TODO: remove after testing
+            return true;
         }
 
         public static bool MergeUiCameras()
         {
-            return mergeUiCameras != null && mergeUiCameras.Value;
+            // TODO: remove after testing
+            return true;
         }
 
         public static bool UseAmplifyOcclusion()
