@@ -447,7 +447,11 @@ namespace ValheimVRMod.VRCore
         public static void RequestRecentering(bool recaliberateHeight = false)
         {
             headPositionInitialized = false;
-            firstPersonOffset = Vector3.zero;
+            // The arrow key adjustment outlasts the automatic recenterings, e. g. on attaching to a chair or a mount.
+            if (recaliberateHeight)
+            {
+                firstPersonOffset = Vector3.zero;
+            }
             firstPersonHeightOffset = null;
             heightCaliberationPending |= recaliberateHeight;
             thirdPersonRecenteringRequestFrame = Time.frameCount;
@@ -1173,7 +1177,6 @@ namespace ValheimVRMod.VRCore
             _fadeManager.OnFadeToWorld += () => {
                 //Recenter
                 VRPlayer.headPositionInitialized = false;
-                firstPersonOffset = Vector3.zero;
                 VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
             };
         }
@@ -1345,7 +1348,6 @@ namespace ValheimVRMod.VRCore
             _instance.transform.SetParent(getPlayerCharacter().transform, false);
             attachedToPlayer = false;
             headPositionInitialized = false;
-            firstPersonOffset = Vector3.zero;
             BarberMirror.Enter(vrikRef, getPlayerCharacter(), _instance.transform, _vrCam.transform);
             // BarberMirror leaves the VRIK paused, for the usual unpausing to restore it once the mirror is left.
             pausedMovement = true;
@@ -1526,7 +1528,7 @@ namespace ValheimVRMod.VRCore
             }
             else
             {
-                var offset = -getHeadOffset(_headZoomLevel); // Player controlled offset (zeroed on tracking reset)
+                var offset = -getHeadOffset(_headZoomLevel); // Player controlled offset (zeroed on recentering by the player)
                 if (playerCharacter.IsSitting())
                 {
                     if (playerCharacter.IsAttached())
@@ -2301,7 +2303,6 @@ namespace ValheimVRMod.VRCore
             thirdPersonRecenteringRequestFrame = Time.frameCount;
             attachedToPlayer = false;
             headPositionInitialized = false;
-            firstPersonOffset = Vector3.zero;
         }
 
         // Used to turn off the head model when player is currently occupying it.
