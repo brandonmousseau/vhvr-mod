@@ -34,14 +34,10 @@ namespace ValheimVRMod.Utilities
         }
 
         // Whether the OnRenderObject work tracked by lastFrame should run now. False only when it already ran in this
-        // frame's render phase and RenderWorkOncePerFrame is on.
+        // frame's render phase.
         public static bool ShouldRun(ref int lastFrame)
         {
             Init();
-            if (!VHVRConfig.RenderWorkOncePerFrame())
-            {
-                return true;
-            }
             int frame = Time.frameCount;
             if (beforeRenderFrame != frame)
             {

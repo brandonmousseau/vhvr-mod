@@ -12,17 +12,9 @@ namespace ValheimVRMod.Utilities
     // - no occlusion culling, also copied from the VR camera;
     // - no shadows while they render (QualitySettings.shadows off from their OnPreCull to their OnPostRender), which
     //   skips the shadow caster culling and shadow map setup per eye; UI is unlit.
-    // Applied every frame from VRPlayer.enableCameras(), so it switches live; turned off, each camera gets back the
-    // values it had before.
+    // Applied every frame from VRPlayer.enableCameras().
     static class LeanUiCameras
     {
-        private struct Original
-        {
-            public DepthTextureMode depthTextureMode;
-            public bool useOcclusionCulling;
-        }
-
-        private static readonly Dictionary<Camera, Original> originals = new Dictionary<Camera, Original>();
         private static readonly List<Camera> leanCameras = new List<Camera>();
         private static bool subscribed;
         // The camera whose render turned shadows off, and the setting to put back.
@@ -36,60 +28,22 @@ namespace ValheimVRMod.Utilities
             {
                 return;
             }
-            bool lean = VHVRConfig.LeanUiCameras();
-            if (lean)
+            if (!leanCameras.Contains(camera))
             {
-                if (!originals.ContainsKey(camera))
-                {
-                    originals[camera] = new Original
-                    {
-                        depthTextureMode = camera.depthTextureMode,
-                        useOcclusionCulling = camera.useOcclusionCulling
-                    };
-                    LogInfo("LeanUiCameras: " + camera.name + " depthTextureMode " + camera.depthTextureMode +
-                            " -> None, occlusion culling " + camera.useOcclusionCulling + " -> False, shadows off while it renders.");
-                    pruneDestroyed();
-                }
-                if (camera.depthTextureMode != DepthTextureMode.None)
-                {
-                    camera.depthTextureMode = DepthTextureMode.None;
-                }
-                if (camera.useOcclusionCulling)
-                {
-                    camera.useOcclusionCulling = false;
-                }
-                if (!leanCameras.Contains(camera))
-                {
-                    leanCameras.Add(camera);
-                }
-                subscribe();
+                leanCameras.RemoveAll(c => c == null);
+                leanCameras.Add(camera);
+                LogInfo("LeanUiCameras: " + camera.name + " depthTextureMode " + camera.depthTextureMode +
+                        " -> None, occlusion culling " + camera.useOcclusionCulling + " -> False, shadows off while it renders.");
             }
-            else if (originals.TryGetValue(camera, out Original original))
+            if (camera.depthTextureMode != DepthTextureMode.None)
             {
-                camera.depthTextureMode = original.depthTextureMode;
-                camera.useOcclusionCulling = original.useOcclusionCulling;
-                originals.Remove(camera);
-                leanCameras.Remove(camera);
-                LogInfo("LeanUiCameras: " + camera.name + " back to depthTextureMode " + original.depthTextureMode +
-                        ", occlusion culling " + original.useOcclusionCulling + ".");
+                camera.depthTextureMode = DepthTextureMode.None;
             }
-        }
-
-        private static void pruneDestroyed()
-        {
-            var destroyed = new List<Camera>();
-            foreach (Camera camera in originals.Keys)
+            if (camera.useOcclusionCulling)
             {
-                if (camera == null)
-                {
-                    destroyed.Add(camera);
-                }
+                camera.useOcclusionCulling = false;
             }
-            foreach (Camera camera in destroyed)
-            {
-                originals.Remove(camera);
-            }
-            leanCameras.RemoveAll(c => c == null);
+            subscribe();
         }
 
         private static void subscribe()
@@ -107,7 +61,7 @@ namespace ValheimVRMod.Utilities
         {
             // A render that never reached its OnPostRender must not leave the world without shadows.
             restoreShadows();
-            if (camera == null || !VHVRConfig.LeanUiCameras() || !leanCameras.Contains(camera))
+            if (camera == null || !leanCameras.Contains(camera))
             {
                 return;
             }
