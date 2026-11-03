@@ -9,6 +9,7 @@ using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
 using UnityEngine.InputSystem.UI;
+using UnityEngine.Rendering;
 using System.Linq;
 
 namespace ValheimVRMod.VRCore.UI
@@ -128,7 +129,24 @@ namespace ValheimVRMod.VRCore.UI
         private readonly bool[] isLaserProxyShown = new bool[2];
         // What onCameraPreCull() hid from the camera being rendered, for onCameraPostRender() to show again.
         private readonly List<Renderer> hiddenFromCurrentCamera = new List<Renderer>();
+        // [Graphics] MergeUiCameras: the camera (the hands camera) that draws the panel with panelCommandBuffer instead
+        // of VRUICamera, else null. See onCameraPreRender().
+        private Camera panelDrawingCamera;
+        private CommandBuffer panelCommandBuffer;
+        private const CameraEvent PANEL_DRAW_EVENT = CameraEvent.BeforeForwardOpaque;
+        // Whether the panel drawn relative to the rig matched its world space draw when checked once; while false
+        // it is drawn with world space matrices instead. See checkPanelInEye().
+        private bool eyeOffsetsTrusted = true;
+        private bool hasCheckedEyeOffsets;
+        // Each eye's pose in the camera (left, right), see getEyeInCamera(), and how far from the world origin, in
+        // metres, it is read afresh.
+        private readonly bool[] hasEyeInCamera = new bool[2];
+        private readonly Vector3[] eyeOffsetInCamera = new Vector3[2];
+        private readonly Quaternion[] eyeRotationInCamera = new Quaternion[2];
+        private const float EYE_IN_CAMERA_READ_RANGE = 1000f;
         private static VRGUI instance;
+        // The GUI panel camera (VRUICamera) once created, else null.
+        public static Camera uiPanelCamera { get { return instance != null ? instance._uiPanelCamera : null; } }
         private Camera _guiCamera;
         private List<Canvas> _guiCanvases = new List<Canvas>();
         private Canvas _cursorGuiCanvas;
@@ -193,6 +211,7 @@ namespace ValheimVRMod.VRCore.UI
         public void OnEnable()
         {
             Camera.onPreCull += onCameraPreCull;
+            Camera.onPreRender += onCameraPreRender;
             Camera.onPostRender += onCameraPostRender;
             creatGuiCamera();
             if (USING_OVERLAY)
@@ -201,10 +220,21 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        // The frame the panel was last placed in the render phase, see OnRenderObject().
+        private int lastPanelRenderFrame = -1;
+
         public void OnRenderObject()
         {
             if (ensureGuiCanvas() && !USING_OVERLAY)
             {
+                // Placing the panel gives the same pose after every camera render of a frame, except while it is
+                // recentering, which steps towards its target by the frame time on each call, so its speed as seen
+                // depends on that number of calls: that keeps running after every render, as before.
+                if (!isRecentering && !RenderPhase.ShouldRun(ref lastPanelRenderFrame))
+                {
+                    countTextureUpdate();
+                    return;
+                }
                 updateUiPanel();
                 maybeInitializePointers();
             }
@@ -350,9 +380,11 @@ namespace ValheimVRMod.VRCore.UI
         public void OnDisable()
         {
             Camera.onPreCull -= onCameraPreCull;
+            Camera.onPreRender -= onCameraPreRender;
             Camera.onPostRender -= onCameraPostRender;
             showHiddenRenderers();
             setUiPanelCameraAnchored(false);
+            setPanelDrawingCamera(null);
             destroyOverlay();
         }
 
@@ -428,7 +460,13 @@ namespace ValheimVRMod.VRCore.UI
             // is in Update, where the panel still is where the previous frame left it while the pointer has already
             // moved with the player, so the cursor would be off by the travel in between.
             UpdateCursorPosition();
-            if (_guiCanvases.Count > 0 && _guiTexture != null && ++textureUpdateTicker > 128)
+            countTextureUpdate();
+        }
+
+        // Puts the GUI texture back on the panel every 128 calls of OnRenderObject, also those that skip placing it.
+        private void countTextureUpdate()
+        {
+            if (_uiPanel != null && _guiCanvases.Count > 0 && _guiTexture != null && ++textureUpdateTicker > 128)
             {
                 textureUpdateTicker = 0;
                 _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
@@ -1013,8 +1051,9 @@ namespace ValheimVRMod.VRCore.UI
             float minDistance = anchoredUiPanelCamera != null ?
                 PANEL_ORIGIN_ANCHOR_MIN_DISTANCE - PANEL_ORIGIN_ANCHOR_HYSTERESIS : PANEL_ORIGIN_ANCHOR_MIN_DISTANCE;
             // The settings for the camera locked HUD use the UI panel camera's transform as their reference.
+            // Not while the panel is drawn by the merged UI camera, which draws it relative to the rig anyway.
             bool anchor =
-                !USING_OVERLAY && !SettingCallback.configRunning &&
+                !USING_OVERLAY && !SettingCallback.configRunning && panelDrawingCamera == null &&
                 _uiPanel != null && _uiPanelCamera != null && rig != null &&
                 getMaxAbsCoordinate(rig.position) > minDistance &&
                 tryGetPoseInAncestor(vrCam.transform, rig, out _, out _, out _) &&
@@ -1246,7 +1285,9 @@ namespace ValheimVRMod.VRCore.UI
         private void onCameraPreCull(Camera camera)
         {
             showHiddenRenderers();
-            if (camera.name == CameraUtils.FOLLOW_CAMERA)
+            // Camera references rather than names: this runs for every camera render, ~10 a frame, and each read of
+            // camera.name is a native call and a new string.
+            if (camera == VRPlayer.thirdPersonCam)
             {
                 maybeHideFromFlatscreenCamera();
                 return;
@@ -1258,7 +1299,7 @@ namespace ValheimVRMod.VRCore.UI
             bool isAnchoredUiPanelCamera = camera == anchoredUiPanelCamera;
             // The headset cameras that may draw the real laser beams, whatever layer those are on.
             bool isVrCamera = camera == VRPlayer.vrCam;
-            bool isHandsCamera = camera.name == CameraUtils.HANDS_CAMERA;
+            bool isHandsCamera = camera == VRPlayer.handsCam;
             if (!isVrCamera && !isHandsCamera && !isAnchoredUiPanelCamera)
             {
                 return;
@@ -1294,6 +1335,178 @@ namespace ValheimVRMod.VRCore.UI
             {
                 hide(panelRenderer);
                 _handPanelProxy.enabled = true;
+            }
+        }
+
+        // [Graphics] MergeUiCameras, from VRPlayer.enableCameras() between frames: the camera that draws the panel in
+        // place of VRUICamera, or null to leave that to VRUICamera again.
+        public static void SetPanelDrawingCamera(Camera camera)
+        {
+            if (instance != null)
+            {
+                instance.setPanelDrawingCamera(camera);
+            }
+        }
+
+        private void setPanelDrawingCamera(Camera camera)
+        {
+            if (ReferenceEquals(camera, panelDrawingCamera))
+            {
+                return;
+            }
+            if (panelDrawingCamera != null && panelCommandBuffer != null)
+            {
+                panelDrawingCamera.RemoveCommandBuffer(PANEL_DRAW_EVENT, panelCommandBuffer);
+            }
+            panelDrawingCamera = camera;
+            if (camera == null)
+            {
+                return;
+            }
+            if (panelCommandBuffer == null)
+            {
+                panelCommandBuffer = new CommandBuffer { name = "VHVR GUI panel" };
+            }
+            panelCommandBuffer.Clear();
+            camera.AddCommandBuffer(PANEL_DRAW_EVENT, panelCommandBuffer);
+            setUiPanelCameraAnchored(false);
+        }
+
+        // Fills the panel's command buffer for the eye about to render, after culling, when the eye's matrices are
+        // set. Order within that camera stays as it was across the separate cameras: the panel first (the world is
+        // already there, the camera clears only depth), then a depth clear, so that the hands and the world space UI
+        // still draw over the whole panel as before; then the hands (opaque) and the world space UI (transparent).
+        private void onCameraPreRender(Camera camera)
+        {
+            if (panelDrawingCamera == null || camera != panelDrawingCamera || panelCommandBuffer == null)
+            {
+                return;
+            }
+            panelCommandBuffer.Clear();
+            if (USING_OVERLAY || _uiPanel == null || !_uiPanel.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+            Renderer panelRenderer = _uiPanel.GetComponent<Renderer>();
+            MeshFilter panelMesh = _uiPanel.GetComponent<MeshFilter>();
+            if (panelRenderer == null || !panelRenderer.enabled || panelRenderer.sharedMaterial == null ||
+                panelMesh == null || panelMesh.sharedMesh == null)
+            {
+                return;
+            }
+            bool stereo = camera.stereoEnabled && camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Mono;
+            Camera.StereoscopicEye eye = camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right ?
+                Camera.StereoscopicEye.Right : Camera.StereoscopicEye.Left;
+            Matrix4x4 cameraView = stereo ? camera.GetStereoViewMatrix(eye) : camera.worldToCameraMatrix;
+            Matrix4x4 projection = stereo ? camera.GetStereoProjectionMatrix(eye) : camera.projectionMatrix;
+            if (!tryGetPanelMatricesInRig(camera, stereo, eye, cameraView, out Matrix4x4 view, out Matrix4x4 model))
+            {
+                // World space, as VRUICamera draws it near the origin.
+                view = cameraView;
+                model = _uiPanel.localToWorldMatrix;
+            }
+            panelCommandBuffer.SetViewProjectionMatrices(view, projection);
+            panelCommandBuffer.DrawMesh(panelMesh.sharedMesh, model, panelRenderer.sharedMaterial, 0, 0);
+            // Back to the camera's own for the hands and the world space UI.
+            panelCommandBuffer.SetViewProjectionMatrices(cameraView, projection);
+            panelCommandBuffer.ClearRenderTarget(true, false, Color.clear);
+        }
+
+        // The panel and the eye in the space of the camera rig moved to the world origin (its rotation and scale
+        // kept), composed from local poses: the same precision fix as updateUiPanelCameraAnchoring(), at any distance
+        // from the origin, without moving any camera or copying the panel. The eye's offset from the head comes from
+        // the camera's own eye view, see getEyeInCamera(). False to draw in world space.
+        private bool tryGetPanelMatricesInRig(
+            Camera camera, bool stereo, Camera.StereoscopicEye eye, Matrix4x4 cameraView,
+            out Matrix4x4 view, out Matrix4x4 model)
+        {
+            view = Matrix4x4.identity;
+            model = Matrix4x4.identity;
+            Camera vrCam = VRPlayer.vrCam;
+            Transform rig = vrCam == null ? null : vrCam.transform.parent;
+            if (rig == null || !eyeOffsetsTrusted ||
+                !tryGetPoseInAncestor(camera.transform, rig, out Vector3 cameraPosition, out Quaternion cameraRotation, out _))
+            {
+                return false;
+            }
+            getEyeInCamera(camera, stereo, eye, cameraView, rig, out Vector3 eyeOffset, out Quaternion eyeRotation);
+
+            Quaternion rigRotation = rig.rotation;
+            Vector3 rigScale = rig.lossyScale;
+            Matrix4x4 rigAtOrigin = Matrix4x4.TRS(Vector3.zero, rigRotation, rigScale);
+            // Camera matrices leave scale out: the eye's pose at the origin, as a view matrix (looking down -z).
+            Vector3 eyePosition = rigAtOrigin.MultiplyPoint3x4(cameraPosition) + rigRotation * cameraRotation * eyeOffset;
+            Quaternion eyeWorldRotation = rigRotation * cameraRotation * eyeRotation;
+            view = Matrix4x4.Scale(new Vector3(1, 1, -1)) * Matrix4x4.TRS(eyePosition, eyeWorldRotation, Vector3.one).inverse;
+
+            // Where the real panel is, also while held: the laser beams and the cursor go by the real panel, and a
+            // panel drawn at the pose composed from the hand sits visibly off from them while the hand moves.
+            Vector3 panelPosition = rig.InverseTransformPoint(_uiPanel.position);
+            Quaternion panelRotation = Quaternion.Inverse(rigRotation) * _uiPanel.rotation;
+            // The panel has no parent, so its local scale is its world scale.
+            Vector3 panelScale = _uiPanel.localScale;
+            model = rigAtOrigin * Matrix4x4.TRS(panelPosition, panelRotation, divide(panelScale, rigScale));
+
+            if (!hasCheckedEyeOffsets)
+            {
+                checkPanelInEye(eye, eyeOffset, cameraView, view, model);
+            }
+            return eyeOffsetsTrusted;
+        }
+
+        // The eye's pose relative to the camera, from the very view the camera renders the world with (the headset's
+        // own eye poses were found ~4 mm off from it, enough to put the panel out of step between the eyes). Read
+        // from world space matrices, so only within a millimetre or so far out: it hardly changes (only with the
+        // headset's IPD), so out there the last one read near the origin is kept.
+        private void getEyeInCamera(
+            Camera camera, bool stereo, Camera.StereoscopicEye eye, Matrix4x4 cameraView, Transform rig,
+            out Vector3 offset, out Quaternion rotation)
+        {
+            offset = Vector3.zero;
+            rotation = Quaternion.identity;
+            if (!stereo)
+            {
+                return;
+            }
+            int index = eye == Camera.StereoscopicEye.Left ? 0 : 1;
+            if (!hasEyeInCamera[index] || rig.position.sqrMagnitude < EYE_IN_CAMERA_READ_RANGE * EYE_IN_CAMERA_READ_RANGE)
+            {
+                // The view matrix looks down -z: un-flipped it is the inverse of the eye's world pose.
+                Matrix4x4 cameraInEye = Matrix4x4.Scale(new Vector3(1, 1, -1)) * cameraView *
+                    Matrix4x4.TRS(camera.transform.position, camera.transform.rotation, Vector3.one);
+                Matrix4x4 eyeInCamera = cameraInEye.inverse;
+                eyeOffsetInCamera[index] = eyeInCamera.GetColumn(3);
+                eyeRotationInCamera[index] = eyeInCamera.rotation;
+                hasEyeInCamera[index] = true;
+            }
+            offset = eyeOffsetInCamera[index];
+            rotation = eyeRotationInCamera[index];
+        }
+
+        // Once: the panel seen from the eye through the rig has to be where the camera's own eye view and the panel's
+        // world pose put it, or it would sit off from the world in that eye (e. g. a camera pose in the rig gone
+        // wrong, which would be centimetres). Within 1 cm, since the world space matrices themselves are only
+        // precise to about a millimetre 10 km out. If not, the panel stays drawn in world space for the session.
+        private void checkPanelInEye(
+            Camera.StereoscopicEye eye, Vector3 eyeOffset, Matrix4x4 cameraView, Matrix4x4 view, Matrix4x4 model)
+        {
+            hasCheckedEyeOffsets = true;
+            Matrix4x4 expected = cameraView * _uiPanel.localToWorldMatrix;
+            Matrix4x4 composed = view * model;
+            float distance = Vector3.Distance(expected.GetColumn(3), composed.GetColumn(3));
+            float angle = Mathf.Max(
+                Vector3.Angle(expected.GetColumn(0), composed.GetColumn(0)),
+                Vector3.Angle(expected.GetColumn(1), composed.GetColumn(1)));
+            eyeOffsetsTrusted = distance < 0.01f && angle < 0.5f;
+            string message = "MergeUiCameras: the GUI panel in the " + eye + " eye (eye offset " + eyeOffset.ToString("F4") +
+                ") is " + (distance * 1000).ToString("F2") + " mm and " + angle.ToString("F2") + " deg from its world space draw";
+            if (eyeOffsetsTrusted)
+            {
+                LogInfo(message + ": the GUI panel is drawn relative to the rig.");
+            }
+            else
+            {
+                LogWarning(message + ": the GUI panel is drawn in world space instead (it may shake far from the world origin).");
             }
         }
 

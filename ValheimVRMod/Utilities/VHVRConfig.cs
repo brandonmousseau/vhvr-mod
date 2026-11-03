@@ -31,6 +31,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> followCameraDistance;
         private static ConfigEntry<bool> flatscreenPostEffects;
         private static ConfigEntry<bool> displayVRGUIOnFlatScreen;
+        private static ConfigEntry<bool> removeRemoteMagicCloth;
 
         // General Settings
         private static ConfigEntry<float> playerMinEyeHeight;
@@ -187,6 +188,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> shieldScale;
         private static ConfigEntry<float> maxShieldWidth;
         private static ConfigEntry<float> maxBucklerWidth;
+        private static ConfigEntry<int> weaponSweepMaxSteps;
         private static ConfigEntry<bool> movementSecondaryAttack;
         private static ConfigEntry<string> meleeAttackKnockbackDirection;
 
@@ -202,6 +204,13 @@ namespace ValheimVRMod.Utilities
 
         private static Dictionary<int, bool> commandLineOverrides = new Dictionary<int, bool>();
         private static Dictionary<int, string> commandLineStringOverrides = new Dictionary<int, string>();
+
+        // The immutable settings as they stood at session start, including command line overrides.
+        private static string latchedFlatScreenMode;
+        private static bool latchedUseVrControls;
+        private static int latchedMaxVRInitializationTries;
+        private static bool latchedUseOverlayGui;
+        private static bool latchedBhapticsEnabled;
 
         // Common values
         private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "CameraLocked2", "Legacy" };
@@ -312,6 +321,20 @@ namespace ValheimVRMod.Utilities
                 "bhapticsEnabled",
                 false,
                 "Enables bhaptics feedback. Only usable if vrModEnabled true AND the game is not in flat screen mode.");
+
+            // The entries can be edited during a session, the edits apply from the next launch.
+            latchedFlatScreenMode = commandLineStringOverrides.ContainsKey(flatScreenMode.GetHashCode())
+                ? commandLineStringOverrides[flatScreenMode.GetHashCode()]
+                : flatScreenMode.Value;
+            latchedUseVrControls = LatchWithOverride(useVrControls);
+            latchedMaxVRInitializationTries = maxVRInitializationTries.Value;
+            latchedUseOverlayGui = LatchWithOverride(useOverlayGui);
+            latchedBhapticsEnabled = LatchWithOverride(bhapticsEnabled);
+        }
+
+        private static bool LatchWithOverride(ConfigEntry<bool> setting)
+        {
+            return commandLineOverrides.TryGetValue(setting.GetHashCode(), out bool value) ? value : setting.Value;
         }
 
         private static ConfigEntry<bool> createImmutableSettingWithOverride(
@@ -436,6 +459,11 @@ namespace ValheimVRMod.Utilities
                                      true,
                                      "Follow/Spectator/Stabilized only: show the VR GUI panel, including when it is attached to" +
                                      " the hand, and the laser pointers in the flat screen view. The main menu is always shown.");
+            removeRemoteMagicCloth = config.Bind("Graphics",
+                                     "RemoveRemoteMagicCloth",
+                                     true,
+                                     "Turn off the cloth physics of capes on other VR players, whose capes can jitter, so that the capes stay" +
+                                     " rigid on the back.");
         }
 
         private static void InitializeGeneralSettings()
@@ -1182,13 +1210,21 @@ namespace ValheimVRMod.Utilities
                 1.5f,
                 new ConfigDescription("The max allowed width of a buckler in meters - any buckler wider will be shrinked to fit this width. About 0.3m gives a realistic size.",
                 new AcceptableValueRange<float>(0.05f, 3.0f)));
+            weaponSweepMaxSteps = config.Bind("Motion Control",
+                "WeaponSweepMaxSteps",
+                12,
+                new ConfigDescription(
+                    "Steps of weapon trajectory interpolation between frames for collision detection: " +
+                    "set to 0 to disable; tune up to increase collison sensitity " +
+                    "if you notice that weapon collison fail to register in laggy situations",
+                new AcceptableValueRange<int>(0, 16)));
 
             meleeAttackKnockbackDirection = config.Bind("Motion Control",
                                         "MeleeAttackKnockbackDirection",
                                         "Basic",
                                         new ConfigDescription("Melee Attack Knockback Direction: " +
                                         "Basic - Melee knockback direction away from player position. " +
-                                        "Swing - Melee knockback follow swing direction when hewing and stabbed enemy can be moved by the weapon shortly.",
+                                        "Swing - Melee knockback follow swing direction when hewing and stabbed enemy can be moved by the weapon shortly",
                                         new AcceptableValueList<string>(new string[] { "Basic", "Swing" })));
 
             movementSecondaryAttack = config.Bind("Motion Control",
@@ -1371,6 +1407,11 @@ namespace ValheimVRMod.Utilities
             return flatscreenSmoothing.Value * 2f;
         }
 
+        public static bool RemoveRemoteMagicCloth()
+        {
+            return removeRemoteMagicCloth.Value;
+        }
+
         public static float FollowCameraDistance()
         {
             return followCameraDistance.Value;
@@ -1416,13 +1457,8 @@ namespace ValheimVRMod.Utilities
 
         public static bool GetUseOverlayGui()
         {
-            bool useOverlayGuiValue = useOverlayGui.Value;
-            if (commandLineOverrides.ContainsKey(useOverlayGui.GetHashCode()))
-            {
-                useOverlayGuiValue = commandLineOverrides[useOverlayGui.GetHashCode()];
-            }
             // Force this to be off if UseVrControls is on
-            return useOverlayGuiValue && !UseVrControls();
+            return latchedUseOverlayGui && !UseVrControls();
         }
 
         public static float GetOverlayWidth()
@@ -1474,6 +1510,30 @@ namespace ValheimVRMod.Utilities
         public static float GetUiPanelDistance()
         {
             return uiPanelDistance.Value;
+        }
+
+        public static bool HandsCameraForward()
+        {
+            // TODO: remove after testing
+            return true;
+        }
+
+        public static bool RenderWorkOncePerFrame()
+        {
+            // TODO: remove after testing
+            return true;
+        }
+
+        public static bool LeanUiCameras()
+        {
+            // TODO: remove after testing
+            return true;
+        }
+
+        public static bool MergeUiCameras()
+        {
+            // TODO: remove after testing
+            return true;
         }
 
         public static bool UseAmplifyOcclusion()
@@ -1668,17 +1728,12 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseVrControls()
         {
-            bool useVrControlsValue = useVrControls.Value;
-            if (commandLineOverrides.ContainsKey(useVrControls.GetHashCode()))
-            {
-                useVrControlsValue = commandLineOverrides[useVrControls.GetHashCode()];
-            }
-            return useVrControlsValue && !NonVrPlayer();
+            return latchedUseVrControls && !NonVrPlayer();
         }
 
         public static int MaxVRInitializationTries()
         {
-            return maxVRInitializationTries.Value;
+            return latchedMaxVRInitializationTries;
         }
 
         public static bool UseArrowPredictionGraphic()
@@ -1726,13 +1781,9 @@ namespace ValheimVRMod.Utilities
         // initialize VR (see ValheimVRMod.failedToInitializeVR).
         private static bool ResolveFlatScreenMode()
         {
-            string mode = commandLineStringOverrides.ContainsKey(flatScreenMode.GetHashCode())
-                ? commandLineStringOverrides[flatScreenMode.GetHashCode()]
-                : flatScreenMode.Value;
-
-            if (mode != k_flatScreenModeAuto)
+            if (latchedFlatScreenMode != k_flatScreenModeAuto)
             {
-                return mode == k_flatScreenModeOn;
+                return latchedFlatScreenMode == k_flatScreenModeOn;
             }
 
             bool steamVrRunning = VRBackend.Active.IsRuntimeRunning();
@@ -2050,6 +2101,11 @@ namespace ValheimVRMod.Utilities
         {
             return maxBucklerWidth.Value;
         }
+
+        public static int WeaponSweepMaxSteps()
+        {
+            return weaponSweepMaxSteps.Value;
+        }
         public static bool MovementSecondaryAttack()
         {
             return movementSecondaryAttack.Value;
@@ -2287,12 +2343,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool BhapticsEnabled()
         {
-            bool bhapticsEnabledValue = bhapticsEnabled.Value;
-            if (commandLineOverrides.ContainsKey(bhapticsEnabled.GetHashCode()))
-            {
-                bhapticsEnabledValue = commandLineOverrides[bhapticsEnabled.GetHashCode()];
-            }
-            return bhapticsEnabledValue && !NonVrPlayer();
+            return latchedBhapticsEnabled && !NonVrPlayer();
         }
 
         public static bool ShowDebugColliders()
@@ -2380,6 +2431,14 @@ namespace ValheimVRMod.Utilities
         public static bool IsFullBodyTrackingEntry(ConfigEntryBase entry)
         {
             return entry == hipTrackerIndex || entry == leftFootTrackerIndex || entry == rightFootTrackerIndex;
+        }
+
+        // The immutable settings offered in the settings dialog. ModEnabled is left out since turning it off would
+        // remove the dialog needed to turn it back on, and PluginVersion is internal.
+        public static bool IsRestartRequiredEntry(ConfigEntryBase entry)
+        {
+            return entry == flatScreenMode || entry == useVrControls || entry == maxVRInitializationTries
+                || entry == useOverlayGui || entry == bhapticsEnabled;
         }
 
         public static bool IsHipTrackingEnabled()

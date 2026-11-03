@@ -91,6 +91,10 @@
       <HintPath>$(ValheimManagedDir)assembly_utils.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="MagicaClothV2">
+      <HintPath>$(ValheimManagedDir)MagicaClothV2.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="assembly_guiutils" Publicize="true">
       <HintPath>$(ValheimManagedDir)assembly_guiutils.dll</HintPath>
       <Private>false</Private>

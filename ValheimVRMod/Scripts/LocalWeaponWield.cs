@@ -58,6 +58,8 @@ namespace ValheimVRMod.Scripts
 
         private float shieldSize = 1f;
 
+        protected override bool WieldsOncePerFrame { get { return true; } }
+
         protected virtual void Awake()
         {
             if (NextWeaponHoldShouldStartPointingUlnar.HasValue)
@@ -436,11 +438,19 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            crosshair.SetActive(VHVRConfig.ShowStaticCrosshair());
-            crosshair.transform.SetParent(transform, false);
+            // The crosshair ends up shown exactly while aiming. It used to be switched on or off by ShowStaticCrosshair
+            // first and then to isAiming, which, with the static crosshair on and not aiming, activated its canvas and
+            // deactivated it again after every camera render; now it is only switched when that changes.
+            if (crosshair.transform.parent != transform)
+            {
+                crosshair.transform.SetParent(transform, false);
+            }
             crosshair.transform.position = transform.position + CrosshairManager.WEAPON_CROSSHAIR_DISTANCE * weaponForward;
             crosshair.transform.localRotation = Quaternion.identity;
-            crosshair.SetActive(isAiming);
+            if (crosshair.activeSelf != isAiming)
+            {
+                crosshair.SetActive(isAiming);
+            }
         }
 
         private void InitializeRedDot()

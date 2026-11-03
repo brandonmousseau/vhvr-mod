@@ -142,8 +142,20 @@ namespace ValheimVRMod.Scripts
             Destroy(originalTransform.gameObject);
         }
 
+        // The frame UpdateTwoHandedWield() last ran in the render phase, see RenderPhase.
+        private int lastWieldRenderFrame = -1;
+
+        // Whether UpdateTwoHandedWield() runs once per frame (RenderPhase) rather than after every camera render.
+        // Only the local player's weapon: a remote player's weapon is also posed by ClientWeaponSync.OnRenderObject,
+        // in an order between the two scripts that Unity does not fix, so it keeps running after every render.
+        protected virtual bool WieldsOncePerFrame { get { return false; } }
+
         protected virtual void OnRenderObject()
         {
+            if (WieldsOncePerFrame && !RenderPhase.ShouldRun(ref lastWieldRenderFrame))
+            {
+                return;
+            }
             UpdateTwoHandedWield();
         }
 

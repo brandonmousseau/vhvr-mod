@@ -97,6 +97,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 if (canvas == null)
                 {
+                    // A copy of the graphic (another mod cloning a panel) comes with the canvas already on it.
+                    canvas = gameObject.GetComponent<Canvas>();
+                }
+                if (canvas == null)
+                {
                     canvas = gameObject.AddComponent<Canvas>();
                 }
                 // Not kept if set while inactive.

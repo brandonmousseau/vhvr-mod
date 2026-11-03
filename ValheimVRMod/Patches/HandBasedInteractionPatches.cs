@@ -147,6 +147,26 @@ namespace ValheimVRMod.Patches
             }
         }
 
+        // While the player steers something (riding a mount, at a ship's rudder) the game stops looking for hover
+        // objects: Player.UpdateHover clears m_hovering but never calls FindHoverObject, so the postfix below did not
+        // run either. The left hand's hover and both hands' hit points kept their last values: the left hover text
+        // stayed pinned in the world where the ride began, and the left Use interacted with the mount again instead
+        // of reaching vanilla's dismount. Reset them to "nothing hit" here instead.
+        [HarmonyPatch(typeof(Player), "UpdateHover")]
+        class Player_UpdateHover_Patch
+        {
+            static void Postfix(Player __instance, IDoodadController ___m_doodadController)
+            {
+                if (__instance != Player.m_localPlayer || ___m_doodadController == null || !VHVRConfig.UseVrControls())
+                {
+                    return;
+                }
+                leftHover = null;
+                currentHitPositionRight = Player_FindHoverObject_Patch.MissPosition(VRPlayer.rightPointer);
+                currentHitPositionLeft = Player_FindHoverObject_Patch.MissPosition(VRPlayer.leftPointer);
+            }
+        }
+
         // Set the left/right hand hover objects based on
         // laser pointer vectors
         [HarmonyPatch(typeof(Player), "FindHoverObject")]
@@ -154,6 +174,16 @@ namespace ValheimVRMod.Patches
         {
 
             private static float raycastDistanceLimit = 50f;
+
+            // Where a ray that hits nothing ends, as UpdateHoverObject reports it.
+            internal static Vector3 MissPosition(VRLaserPointer pointer)
+            {
+                if (pointer == null)
+                {
+                    return Vector3.zero;
+                }
+                return pointer.rayStartingPosition + pointer.rayDirection * Vector3.forward * raycastDistanceLimit;
+            }
 
             static void Postfix(Player __instance, ref GameObject hover, ref Character hoverCreature, int ___m_interactMask)
             {

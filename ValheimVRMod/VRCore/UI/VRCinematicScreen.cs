@@ -184,7 +184,9 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
             bool isVrCamera = camera == CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-            if (!isVrCamera && camera != CameraUtils.getCamera(CameraUtils.WORLD_SPACE_UI_CAMERA))
+            // With [Graphics] MergeUiCameras the hands camera draws the world space UI: only that layer goes.
+            bool isMergedUiCamera = camera == VRPlayer.mergedUiCamera;
+            if (!isVrCamera && !isMergedUiCamera && camera != CameraUtils.getCamera(CameraUtils.WORLD_SPACE_UI_CAMERA))
             {
                 return;
             }
@@ -193,7 +195,7 @@ namespace ValheimVRMod.VRCore.UI
             savedCullingMask = camera.cullingMask;
             savedClearFlags = camera.clearFlags;
             savedBackgroundColor = camera.backgroundColor;
-            camera.cullingMask = 0;
+            camera.cullingMask = isMergedUiCamera ? camera.cullingMask & ~LayerUtils.WORLDSPACE_UI_LAYER_MASK : 0;
             if (isVrCamera)
             {
                 // The world space UI camera only clears depth, drawing over what the VR camera drew.

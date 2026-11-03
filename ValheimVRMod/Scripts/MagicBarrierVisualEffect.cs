@@ -89,6 +89,11 @@ namespace ValheimVRMod.Scripts
         // and OnCameraPostRender() turns it back on before the next camera.
         private void OnCameraPreCull(Camera camera)
         {
+            // Runs for every camera render, ~10 a frame, and there is nothing to do without a barrier up.
+            if (barriers.Count == 0)
+            {
+                return;
+            }
             View view = GetView(camera);
             if (view == View.Other)
             {
@@ -150,11 +155,47 @@ namespace ValheimVRMod.Scripts
             {
                 return View.FromInside;
             }
-            if (camera.TryGetComponent(out ThirdPersonCameraUpdater thirdPersonCameraUpdater))
+            if (!flatScreenUpdaters.TryGetValue(camera, out FlatScreenUpdaters updaters))
             {
-                return thirdPersonCameraUpdater.ViewsCharacterFromOutside ? View.FromOutside : View.FromInside;
+                // The updaters are added before a flat screen camera first renders, so a camera's are known once seen.
+                pruneDestroyedCameras();
+                camera.TryGetComponent(out updaters.thirdPerson);
+                updaters.stabilized = camera.TryGetComponent(out StabilizedCameraUpdater _);
+                flatScreenUpdaters[camera] = updaters;
             }
-            return camera.TryGetComponent(out StabilizedCameraUpdater _) ? View.FromInside : View.Other;
+            if (updaters.thirdPerson != null)
+            {
+                return updaters.thirdPerson.ViewsCharacterFromOutside ? View.FromOutside : View.FromInside;
+            }
+            return updaters.stabilized ? View.FromInside : View.Other;
+        }
+
+        private struct FlatScreenUpdaters
+        {
+            public ThirdPersonCameraUpdater thirdPerson;
+            public bool stabilized;
+        }
+
+        // Per camera seen, which updater it has: two component lookups per camera render otherwise.
+        private readonly Dictionary<Camera, FlatScreenUpdaters> flatScreenUpdaters = new Dictionary<Camera, FlatScreenUpdaters>();
+
+        private void pruneDestroyedCameras()
+        {
+            List<Camera> destroyed = null;
+            foreach (Camera seen in flatScreenUpdaters.Keys)
+            {
+                if (seen == null)
+                {
+                    (destroyed ?? (destroyed = new List<Camera>())).Add(seen);
+                }
+            }
+            if (destroyed != null)
+            {
+                foreach (Camera camera in destroyed)
+                {
+                    flatScreenUpdaters.Remove(camera);
+                }
+            }
         }
 
         public void Show(StatusEffect shield, Character character)

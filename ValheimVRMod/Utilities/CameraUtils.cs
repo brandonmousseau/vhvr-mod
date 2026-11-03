@@ -47,6 +47,9 @@ namespace ValheimVRMod.Utilities
             to.backgroundColor = from.backgroundColor;
         }
 
+        // The world space UI camera if it has been created, without creating it.
+        public static Camera existingWorldspaceUiCamera { get { return _worldSpaceUiCamera; } }
+
         public static Camera getWorldspaceUiCamera()
         {
             if (_worldSpaceUiCamera != null)
