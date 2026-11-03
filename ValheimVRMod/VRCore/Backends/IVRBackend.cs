@@ -1,11 +1,19 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.VRCore.Backends
 {
     public interface IVRBackend
     {
+        // For log messages, e. g. "SteamVR".
+        string RuntimeName { get; }
+        // Whether motion controllers can drive the game. Without them it is played with keyboard and mouse or a
+        // gamepad, as with UseVRControls off.
+        bool SupportsControllers { get; }
+        // Whether the GUI can be drawn on a runtime overlay (UseOverlayGui).
+        bool SupportsOverlay { get; }
         IVRInputBackend Input { get; }
         IVRRigBackend Rig { get; }
         IVRKeyboardBackend Keyboard { get; }
@@ -26,7 +34,15 @@ namespace ValheimVRMod.VRCore.Backends
 
     public static class VRBackend
     {
-        public static IVRBackend Active { get; } = new SteamVRBackend();
+        private static IVRBackend active;
+
+        // Chosen by the VRRuntime setting the first time it is needed, which is after the configuration has been
+        // read (ValheimVRMod.Awake), and kept for the session.
+        public static IVRBackend Active => active ?? (active = Create());
+
+        // Constructing a backend does not touch its runtime or SDK: that only happens from InitializeVR() on.
+        private static IVRBackend Create() =>
+            VHVRConfig.UseOpenXR() ? (IVRBackend)new OpenXRBackend() : new SteamVRBackend();
     }
 
     public enum VRInputSource

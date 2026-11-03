@@ -660,7 +660,13 @@ namespace ValheimVRMod.VRCore
         // See: https://www.reddit.com/r/Pimax/comments/qhkrfp/pimax_unity_xr_plugin_issue/
         private static void UpdateTrackedPoseDriverPoseSource()
         {
-            var hmd = VRBackend.Active.Rig.Player.hmdTransform;
+            var hmd = VRBackend.Active.Rig.Player?.hmdTransform;
+            if (hmd == null)
+            {
+                // Throwing here would cut VRPlayer.Awake() short and leave the game without a VR camera.
+                LogWarning("No HMD transform on the rig.");
+                return;
+            }
             var trackedPoseDriver = hmd.gameObject.GetComponent<TrackedPoseDriver>();
             if (trackedPoseDriver == null)
             {
@@ -786,9 +792,13 @@ namespace ValheimVRMod.VRCore
                 leftHand = getHand(LEFT_HAND, _instance);
                 if (leftHand != null)
                 {
-                    (leftHandBone = new GameObject().transform).parent = leftHand.transform;
-                    leftHandBone.localPosition = VrikCreator.leftUnequippedPosition;
-                    leftHandBone.localRotation = VrikCreator.leftUnequippedRotation;
+                    // Once per hand: a rig without laser pointers (OpenXR) comes through here every frame.
+                    if (leftHandBone == null || leftHandBone.parent != leftHand.transform)
+                    {
+                        (leftHandBone = new GameObject().transform).parent = leftHand.transform;
+                        leftHandBone.localPosition = VrikCreator.leftUnequippedPosition;
+                        leftHandBone.localRotation = VrikCreator.leftUnequippedRotation;
+                    }
                     _leftPointer = VRBackend.Active.Rig.GetPointer(leftHand.gameObject);
                     if (_leftPointer != null)
                     {
@@ -801,9 +811,13 @@ namespace ValheimVRMod.VRCore
                 rightHand = getHand(RIGHT_HAND, _instance);
                 if (rightHand != null)
                 {
-                    (rightHandBone = new GameObject().transform).parent = rightHand.transform;
-                    rightHandBone.localPosition = VrikCreator.rightUnequippedPosition;
-                    rightHandBone.localRotation = VrikCreator.rightUnequippedRotation;
+                    // Once per hand: a rig without laser pointers (OpenXR) comes through here every frame.
+                    if (rightHandBone == null || rightHandBone.parent != rightHand.transform)
+                    {
+                        (rightHandBone = new GameObject().transform).parent = rightHand.transform;
+                        rightHandBone.localPosition = VrikCreator.rightUnequippedPosition;
+                        rightHandBone.localRotation = VrikCreator.rightUnequippedRotation;
+                    }
                     _rightPointer = VRBackend.Active.Rig.GetPointer(rightHand.gameObject);
                     if (_rightPointer != null)
                     {
