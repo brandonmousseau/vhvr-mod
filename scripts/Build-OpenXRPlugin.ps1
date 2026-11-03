@@ -1,5 +1,6 @@
-# Builds the OpenXR plugin files the mod ships for its OpenXR runtime (vrRuntime = OpenXR) into
-# Unity\build\OpenXR, where make-release.cmd copies them from:
+# Refreshes the checked-in OpenXR plugin files the mod ships for its OpenXR runtime (VRRuntime = OpenXR) in
+# Unity\OpenXR, where make-release.cmd copies them from. Building the mod does not need this; run it only to move to
+# another package version (update $package below and Unity\OpenXR\README.md), then commit the changed files:
 #   Managed\Unity.XR.OpenXR.dll                                     built from the package sources (see OpenXRPlugin\)
 #   Plugins\x86_64\UnityOpenXR.dll, Plugins\x86_64\openxr_loader.dll taken from the package as they are
 #   UnitySubsystems\UnityOpenXR\UnitySubsystemsManifest.json         taken from the package as it is
@@ -13,7 +14,7 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $project = Join-Path $PSScriptRoot 'OpenXRPlugin'
 $packagesDir = Join-Path $project 'packages'
-$outDir = Join-Path $repo 'Unity\build\OpenXR'
+$outDir = Join-Path $repo 'Unity\OpenXR'
 
 # OpenXR 1.19 is a line made for Unity 6000.0, which Valheim runs. It is built against the XR Management the mod
 # already ships (4.0.1), not the 4.4 it asks for: it uses nothing newer. Of its other dependencies only the Input

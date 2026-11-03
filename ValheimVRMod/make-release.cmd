@@ -23,12 +23,12 @@ if not exist "%GAME_DIR%Valheim_Data\UnitySubsystems" mkdir "%GAME_DIR%Valheim_D
 if not exist "%GAME_DIR%Valheim_Data\UnitySubsystems\XRSDKOpenVR" mkdir "%GAME_DIR%Valheim_Data\UnitySubsystems\XRSDKOpenVR"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\UnitySubsystems\XRSDKOpenVR\UnitySubsystemsManifest.json" "%GAME_DIR%Valheim_Data\UnitySubsystems\XRSDKOpenVR"
 
-:: OpenXR runtime (VRRuntime = OpenXR), built by scripts\Build-OpenXRPlugin.ps1
-copy "%SOLUTION_DIR%Unity\build\OpenXR\Managed\Unity.XR.OpenXR.dll" "%GAME_DIR%Valheim_Data\Managed"
-copy "%SOLUTION_DIR%Unity\build\OpenXR\Plugins\x86_64\UnityOpenXR.dll" "%GAME_DIR%Valheim_Data\Plugins\x86_64"
-copy "%SOLUTION_DIR%Unity\build\OpenXR\Plugins\x86_64\openxr_loader.dll" "%GAME_DIR%Valheim_Data\Plugins\x86_64"
+:: OpenXR runtime (VRRuntime = OpenXR), checked in: see Unity\OpenXR\README.md
+copy "%SOLUTION_DIR%Unity\OpenXR\Managed\Unity.XR.OpenXR.dll" "%GAME_DIR%Valheim_Data\Managed"
+copy "%SOLUTION_DIR%Unity\OpenXR\Plugins\x86_64\UnityOpenXR.dll" "%GAME_DIR%Valheim_Data\Plugins\x86_64"
+copy "%SOLUTION_DIR%Unity\OpenXR\Plugins\x86_64\openxr_loader.dll" "%GAME_DIR%Valheim_Data\Plugins\x86_64"
 if not exist "%GAME_DIR%Valheim_Data\UnitySubsystems\UnityOpenXR" mkdir "%GAME_DIR%Valheim_Data\UnitySubsystems\UnityOpenXR"
-copy "%SOLUTION_DIR%Unity\build\OpenXR\UnitySubsystems\UnityOpenXR\UnitySubsystemsManifest.json" "%GAME_DIR%Valheim_Data\UnitySubsystems\UnityOpenXR"
+copy "%SOLUTION_DIR%Unity\OpenXR\UnitySubsystems\UnityOpenXR\UnitySubsystemsManifest.json" "%GAME_DIR%Valheim_Data\UnitySubsystems\UnityOpenXR"
 
 if not exist  "%GAME_DIR%Valheim_Data\StreamingAssets\SteamVR" mkdir  "%GAME_DIR%Valheim_Data\StreamingAssets\SteamVR"
 Xcopy /Y /E /I "%SOLUTION_DIR%Unity\build\ValheimVR_Data\StreamingAssets\SteamVR"  "%GAME_DIR%Valheim_Data\StreamingAssets\SteamVR"
@@ -79,12 +79,12 @@ if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems" m
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\XRSDKOpenVR" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\UnitySubsystems\XRSDKOpenVR\UnitySubsystemsManifest.json" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
 
-:: OpenXR runtime (VRRuntime = OpenXR), built by scripts\Build-OpenXRPlugin.ps1
-copy "%SOLUTION_DIR%Unity\build\OpenXR\Managed\Unity.XR.OpenXR.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
-copy "%SOLUTION_DIR%Unity\build\OpenXR\Plugins\x86_64\UnityOpenXR.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
-copy "%SOLUTION_DIR%Unity\build\OpenXR\Plugins\x86_64\openxr_loader.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
+:: OpenXR runtime (VRRuntime = OpenXR), checked in: see Unity\OpenXR\README.md
+copy "%SOLUTION_DIR%Unity\OpenXR\Managed\Unity.XR.OpenXR.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
+copy "%SOLUTION_DIR%Unity\OpenXR\Plugins\x86_64\UnityOpenXR.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
+copy "%SOLUTION_DIR%Unity\OpenXR\Plugins\x86_64\openxr_loader.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\UnityOpenXR" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\UnityOpenXR"
-copy "%SOLUTION_DIR%Unity\build\OpenXR\UnitySubsystems\UnityOpenXR\UnitySubsystemsManifest.json" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\UnityOpenXR"
+copy "%SOLUTION_DIR%Unity\OpenXR\UnitySubsystems\UnityOpenXR\UnitySubsystemsManifest.json" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\UnityOpenXR"
 
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets"
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets\SteamVR" mkdir  "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets\SteamVR"

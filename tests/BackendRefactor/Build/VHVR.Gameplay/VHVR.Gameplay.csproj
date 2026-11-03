@@ -15,8 +15,8 @@
     <Compile Include="$(VHVRSourceRoot)/ValheimVRMod/**/*.cs" Exclude="$(VHVRSourceRoot)/ValheimVRMod/**/obj/**/*.cs;$(VHVRSourceRoot)/ValheimVRMod/**/bin/**/*.cs" />
     <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
     <Reference Include="$(ValheimDir)/Valheim_Data/Managed/Unity*.dll" Exclude="$(ValheimDir)/Valheim_Data/Managed/Unity.XR.OpenXR.dll" Private="false" />
-    <!-- Built by scripts/Build-OpenXRPlugin.ps1; the game has it only once the mod is installed. -->
-    <Reference Include="$(VHVRSourceRoot)/Unity/build/OpenXR/Managed/Unity.XR.OpenXR.dll" Private="false" />
+    <!-- Checked in (see Unity/OpenXR/README.md); the game has it only once the mod is installed. -->
+    <Reference Include="$(VHVRSourceRoot)/Unity/OpenXR/Managed/Unity.XR.OpenXR.dll" Private="false" />
     <Reference Update="$(ValheimDir)/Valheim_Data/Managed/UnityEngine.CoreModule.dll" Publicize="true" />
     <Reference Include="$(ValheimDir)/Valheim_Data/Managed/netstandard.dll" Private="false" />
     <Reference Include="$(ValheimDir)/Valheim_Data/Managed/mscorlib.dll" Private="false" />
