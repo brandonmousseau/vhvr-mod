@@ -523,8 +523,7 @@ namespace ValheimVRMod.Scripts
         // one after, as before.
         private bool isPlacedPoseCurrent(Transform playerTransform)
         {
-            if (!hasPlacedPose || !VHVRConfig.RenderWorkOncePerFrame() ||
-                transform.parent != playerTransform || placedPlayerTransform != playerTransform)
+            if (!hasPlacedPose || transform.parent != playerTransform || placedPlayerTransform != playerTransform)
             {
                 return false;
             }

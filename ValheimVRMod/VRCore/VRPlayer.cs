@@ -1059,15 +1059,13 @@ namespace ValheimVRMod.VRCore
             {
                 enableHandsCamera();
             }
-            bool mergeUi = VHVRConfig.MergeUiCameras() && _handsCam != null && _vrCam != null;
-            if (_handsCam != null && _vrCam != null)
+            bool mergeUi = _handsCam != null && _vrCam != null;
+            if (mergeUi)
             {
                 // The merged GUI panel is drawn by a command buffer at a forward rendering event.
-                RenderingPath handsPath =
-                    VHVRConfig.HandsCameraForward() || mergeUi ? RenderingPath.Forward : _vrCam.renderingPath;
-                if (_handsCam.renderingPath != handsPath)
+                if (_handsCam.renderingPath != RenderingPath.Forward)
                 {
-                    _handsCam.renderingPath = handsPath;
+                    _handsCam.renderingPath = RenderingPath.Forward;
                 }
             }
             applyUiCameraMerge(mergeUi);
@@ -1079,7 +1077,7 @@ namespace ValheimVRMod.VRCore
             }
         }
 
-        // [Graphics] MergeUiCameras: the hands camera also draws the world space UI layer and, through VRGUI's command
+        // Merged UI cameras: the hands camera also draws the world space UI layer and, through VRGUI's command
         // buffer, the GUI panel, while VRUICamera and WorldSpaceUiCamera are switched off. Each of those culled the
         // whole scene and its lights once per eye to draw a few quads. Their objects stay, switched off, since their
         // transforms (children of the VR camera) are what the HUD, crosshair and enemy bars face and parent to.
@@ -1090,14 +1088,13 @@ namespace ValheimVRMod.VRCore
             if (mergedCamera != _mergedUiCamera)
             {
                 LogInfo(merge ?
-                    "MergeUiCameras: the GUI panel and the world space UI are drawn by " + CameraUtils.HANDS_CAMERA + "; " +
+                    "Merged UI cameras: the GUI panel and the world space UI are drawn by " + CameraUtils.HANDS_CAMERA + "; " +
                     CameraUtils.VR_UI_CAMERA + " and " + CameraUtils.WORLD_SPACE_UI_CAMERA + " are off." :
-                    "MergeUiCameras: back to " + CameraUtils.VR_UI_CAMERA + " and " + CameraUtils.WORLD_SPACE_UI_CAMERA + ".");
+                    "Merged UI cameras: back to " + CameraUtils.VR_UI_CAMERA + " and " + CameraUtils.WORLD_SPACE_UI_CAMERA + ".");
             }
             _mergedUiCamera = mergedCamera;
             VRGUI.SetPanelDrawingCamera(mergedCamera);
-            // Every frame while merged, since any of these cameras may be made (again) later; put back only by this,
-            // so that with the setting off nothing changes from before.
+            // Every frame while merged, since any of these cameras may be made (again) later; put back only by this.
             if (merge || _uiCamerasMergedOff)
             {
                 if (_handsCam != null)
