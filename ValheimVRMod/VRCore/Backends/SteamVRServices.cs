@@ -28,8 +28,8 @@ namespace ValheimVRMod.VRCore.Backends
         public bool LoadShaders(string path) => SteamVRAssets.LoadShaders(path);
     }
 
-    // SteamVR plugin helpers that never reach the OpenVR runtime, which is why the OpenXR backend uses them too:
-    // ShaderLoader only reads an asset bundle, and SteamVR_Fade (on the rig's camera) only listens for a managed
+    // SteamVR plugin helpers that never reach the OpenVR runtime, so that a backend for another runtime can use them
+    // too: ShaderLoader only reads an asset bundle, and SteamVR_Fade (on the rig's camera) only listens for a managed
     // event and draws a quad, unless asked to fade the SteamVR overlay as well.
     static class SteamVRAssets
     {
