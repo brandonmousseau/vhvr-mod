@@ -1512,30 +1512,6 @@ namespace ValheimVRMod.Utilities
             return uiPanelDistance.Value;
         }
 
-        public static bool HandsCameraForward()
-        {
-            // TODO: remove after testing
-            return true;
-        }
-
-        public static bool RenderWorkOncePerFrame()
-        {
-            // TODO: remove after testing
-            return true;
-        }
-
-        public static bool LeanUiCameras()
-        {
-            // TODO: remove after testing
-            return true;
-        }
-
-        public static bool MergeUiCameras()
-        {
-            // TODO: remove after testing
-            return true;
-        }
-
         public static bool UseAmplifyOcclusion()
         {
             return useAmplifyOcclusion.Value;
