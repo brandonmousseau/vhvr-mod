@@ -792,7 +792,7 @@ namespace ValheimVRMod.VRCore
                 leftHand = getHand(LEFT_HAND, _instance);
                 if (leftHand != null)
                 {
-                    // Once per hand: a rig without laser pointers (OpenXR) comes through here every frame.
+                    // Once per hand: a rig without laser pointers comes through here every frame.
                     if (leftHandBone == null || leftHandBone.parent != leftHand.transform)
                     {
                         (leftHandBone = new GameObject().transform).parent = leftHand.transform;
@@ -811,7 +811,7 @@ namespace ValheimVRMod.VRCore
                 rightHand = getHand(RIGHT_HAND, _instance);
                 if (rightHand != null)
                 {
-                    // Once per hand: a rig without laser pointers (OpenXR) comes through here every frame.
+                    // Once per hand: a rig without laser pointers comes through here every frame.
                     if (rightHandBone == null || rightHandBone.parent != rightHand.transform)
                     {
                         (rightHandBone = new GameObject().transform).parent = rightHand.transform;
