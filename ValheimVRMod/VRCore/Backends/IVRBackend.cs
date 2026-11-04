@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.VRCore.Backends
 {
@@ -35,12 +36,13 @@ namespace ValheimVRMod.VRCore.Backends
     {
         private static IVRBackend active;
 
-        // Created the first time it is needed and kept for the session, so that a later choice of backend can depend
-        // on the configuration, which is read (ValheimVRMod.Awake) before that.
+        // Chosen by the VRRuntime setting the first time it is needed, which is after the configuration has been
+        // read (ValheimVRMod.Awake), and kept for the session.
         public static IVRBackend Active => active ?? (active = Create());
 
         // Constructing a backend does not touch its runtime or SDK: that only happens from InitializeVR() on.
-        private static IVRBackend Create() => new SteamVRBackend();
+        private static IVRBackend Create() =>
+            VHVRConfig.UseOpenXR() ? (IVRBackend)new OpenXRBackend() : new SteamVRBackend();
     }
 
     public enum VRInputSource
