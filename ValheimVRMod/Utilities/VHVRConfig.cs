@@ -1457,8 +1457,8 @@ namespace ValheimVRMod.Utilities
 
         public static bool GetUseOverlayGui()
         {
-            // Force this to be off if UseVrControls is on
-            return latchedUseOverlayGui && !UseVrControls();
+            // Force this to be off if UseVrControls is on, and where the runtime has no overlays for it.
+            return latchedUseOverlayGui && !UseVrControls() && VRBackend.Active.SupportsOverlay;
         }
 
         public static float GetOverlayWidth()
@@ -1704,7 +1704,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseVrControls()
         {
-            return latchedUseVrControls && !NonVrPlayer();
+            return latchedUseVrControls && !NonVrPlayer() && VRBackend.Active.SupportsControllers;
         }
 
         public static int MaxVRInitializationTries()
@@ -1762,10 +1762,10 @@ namespace ValheimVRMod.Utilities
                 return latchedFlatScreenMode == k_flatScreenModeOn;
             }
 
-            bool steamVrRunning = VRBackend.Active.IsRuntimeRunning();
-            LogUtils.LogInfo("flatScreenMode is \"" + k_flatScreenModeAuto + "\" and SteamVR is " +
-                (steamVrRunning ? "running, so VR will be used." : "not running, so flat screen mode will be used."));
-            return !steamVrRunning;
+            bool runtimeRunning = VRBackend.Active.IsRuntimeRunning();
+            LogUtils.LogInfo("flatScreenMode is \"" + k_flatScreenModeAuto + "\" and " + VRBackend.Active.RuntimeName + " is " +
+                (runtimeRunning ? "running, so VR will be used." : "not running, so flat screen mode will be used."));
+            return !runtimeRunning;
         }
 
 

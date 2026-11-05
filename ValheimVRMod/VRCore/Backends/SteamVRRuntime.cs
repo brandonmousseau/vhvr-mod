@@ -62,10 +62,14 @@ namespace ValheimVRMod.VRCore.Backends
             return true;
         }
 
+        public string RuntimeName => "SteamVR";
+        public bool SupportsControllers => true;
+        public bool SupportsOverlay => true;
+
         public bool StartVR()
         {
             LogInfo("Starting VR...");
-            return StartXRSDK();
+            return XRManagementHelper.StartSubsystems();
         }
 
         public bool InitializeSteamVR()
@@ -90,33 +94,6 @@ namespace ValheimVRMod.VRCore.Backends
                                                     "VR mod for Valheim",
                                                     steamBuild: true,
                                                     steamAppId: 892970);
-            return true;
-        }
-
-        private bool StartXRSDK()
-        {
-            LogInfo("Starting XRSDK!");
-            if (XRGeneralSettings.Instance != null && XRGeneralSettings.Instance.Manager != null
-                && XRGeneralSettings.Instance.Manager.activeLoader != null)
-            {
-                XRGeneralSettings.Instance.Manager.StartSubsystems();
-            } else
-            {
-                LogError("Error Starting XRSDK!");
-                if (XRGeneralSettings.Instance == null)
-                {
-                    LogError("XRGeneralSettings Instance is null!");
-                    return false;
-                } else if (XRGeneralSettings.Instance.Manager == null)
-                {
-                    LogError("XRManager instance is null!");
-                    return false;
-                } else if (XRGeneralSettings.Instance.Manager.activeLoader == null)
-                {
-                    LogError("Active loader is null!");
-                    return false;
-                }
-            }
             return true;
         }
 
@@ -153,26 +130,12 @@ namespace ValheimVRMod.VRCore.Backends
 
         private bool InitializeXRSDKLoaders(XRManagerSettings managerSettings)
         {
-            LogDebug("Initializing XRSDK Loaders...");
-            if (managerSettings == null)
+            if (!XRManagementHelper.InitializeLoaders(managerSettings))
             {
-                LogError("XRManagerSettings instance is null, cannot initialize loader.");
-                return false;
-            }
-            int tries = 0;
-            do
-            {
-                managerSettings.InitializeLoaderSync();
-                tries++;
-            } while ((managerSettings.activeLoader == null) && (tries < VHVRConfig.MaxVRInitializationTries()));
-            if (managerSettings.activeLoader == null)
-            {
-                LogError("managerSettings.activeLoader is null after " + tries + " tries.");
                 return false;
             }
             xrSdkInitialized = true;
             UpdateMirrorViewMode();
-            LogDebug("Got non-null Active Loader.");
             return true;
         }
 
@@ -262,26 +225,7 @@ namespace ValheimVRMod.VRCore.Backends
             return false;
         }
 
-        public void tryRecenter()
-        {
-            if (VRPlayer.ShouldPauseMovement)
-            {
-                return;
-            }
-
-            List<XRInputSubsystem> inputSubsystems = new List<XRInputSubsystem>();
-            SubsystemManager.GetInstances(inputSubsystems);
-            foreach (var subsystem in inputSubsystems)
-            {
-                LogDebug("Recentering Input Subsystem: " + subsystem);
-                subsystem.TryRecenter();
-            }
-
-            // Trigger recentering head position on player body
-            VRPlayer.RequestRecentering(recaliberateHeight: true);
-            VRPlayer.RequestPelvisCaliberation();
-            VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
-        }
+        public void tryRecenter() => XRManagementHelper.Recenter();
 
         private void PrintSteamVRSettings()
         {
