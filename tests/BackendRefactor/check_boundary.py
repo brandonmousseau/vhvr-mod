@@ -1,4 +1,4 @@
-"""Source gates for the SteamVR-only extraction; does not certify headset parity."""
+"""Source gates for the SteamVR and OpenXR backend boundary; does not certify headset parity."""
 from pathlib import Path
 import json
 import re
@@ -14,12 +14,23 @@ def code_only(text):
     # Skip C# comments and string/character literals when checking SDK references.
     return re.sub(r'//[^\n]*|/\*[\s\S]*?\*/|@"(?:""|[^"])*"|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'', ' ', text)
 
+STEAMVR_SDK = r'Valve\.VR|Unity\.XR\.OpenVR|\bSteamVR_\w+|\bOpenVR\.|\bCVR\w+|\bEVR\w+|\bVREvent_\w+|\bETracked\w+|\bShaderLoader\b'
+OPENXR_SDK = r'UnityEngine\.XR\.OpenXR|\bOpenXR(?:Settings|Loader(?!Setup)\w*|Feature\w*|Input)\b'
+# The SteamVR SDK only in the SteamVR backend (SteamVR*.cs and the manifest helper it calls), and the OpenXR SDK only
+# in the one file that names its types, so that neither runtime's assemblies are loaded for the other.
 for path in CORE.rglob('*.cs'):
-    if any(part in path.parts for part in ['Backends', 'obj', 'bin']):
+    if any(part in path.parts for part in ['obj', 'bin']):
         continue
     code = code_only(path.read_text(encoding='utf-8-sig'))
-    require(not re.search(r'Valve\.VR|Unity\.XR\.OpenVR|\bSteamVR_\w+|\bOpenVR\.|\bCVR\w+|\bEVR\w+|\bVREvent_\w+|\bETracked\w+', code),
-            'SDK reference outside the provider boundary: ' + str(path.relative_to(ROOT)))
+    backend = 'Backends' in path.parts
+    steamvr_file = backend and (path.name.startswith('SteamVR') or path.name == 'ApplicationManifestHelper.cs')
+    require(steamvr_file or not re.search(STEAMVR_SDK, code),
+            'SteamVR SDK reference outside the SteamVR backend: ' + str(path.relative_to(ROOT)))
+    require((backend and path.name == 'OpenXRLoaderSetup.cs') or not re.search(OPENXR_SDK, code),
+            'OpenXR SDK reference outside OpenXRLoaderSetup.cs: ' + str(path.relative_to(ROOT)))
+# The OpenXR backend may only use the SteamVR helpers that never reach the OpenVR runtime.
+openxr_backend = code_only((CORE / 'VRCore/Backends/OpenXRBackend.cs').read_text(encoding='utf-8-sig'))
+require(set(re.findall(r'\bSteamVR\w*', openxr_backend)) <= {'SteamVRAssets'}, 'OpenXR backend uses SteamVR beyond SteamVRAssets')
 
 # The action catalog is the one list of actions; the shipped actions.json must declare the same sets and actions
 # with the same types and requirements. SteamVR_Actions (the generated code) must no longer be used.
@@ -49,5 +60,4 @@ for path in CORE.rglob('*.cs'):
     if not any(part in path.parts for part in ['obj', 'bin']):
         require('SteamVR_Actions.' not in code_only(path.read_text(encoding='utf-8-sig')), 'generated SteamVR_Actions used: ' + str(path.relative_to(ROOT)))
 require('SteamVR_Actions' not in (CORE / 'ValheimVRMod.csproj').read_text(encoding='utf-8-sig'), 'SteamVR_Actions still referenced by the project')
-require(not (ROOT / 'OpenXR').exists(), 'OpenXR implementation is outside stage 1')
 print(f'PASS: provider boundary and {len(catalog)} catalog actions matching actions.json.')
