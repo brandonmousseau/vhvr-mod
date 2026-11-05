@@ -18,6 +18,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> vrModEnabled;
         private static ConfigEntry<string> flatScreenMode;
         private static bool? flatScreenModeResolved;
+        private static ConfigEntry<string> vrRuntime;
         private static ConfigEntry<bool> useVrControls;
         private static ConfigEntry<int> maxVRInitializationTries;
         private static ConfigEntry<bool> useOverlayGui;
@@ -207,6 +208,7 @@ namespace ValheimVRMod.Utilities
 
         // The immutable settings as they stood at session start, including command line overrides.
         private static string latchedFlatScreenMode;
+        private static string latchedVrRuntime;
         private static bool latchedUseVrControls;
         private static int latchedMaxVRInitializationTries;
         private static bool latchedUseOverlayGui;
@@ -221,6 +223,11 @@ namespace ValheimVRMod.Utilities
         // The default is listed first because BepInEx clamps an unrecognized value to that entry.
         private static readonly string[] k_flatScreenModeValues =
             { k_flatScreenModeAuto, k_flatScreenModeOff, k_flatScreenModeOn };
+
+        private const string k_vrRuntimeSteamVR = "SteamVR";
+        private const string k_vrRuntimeOpenXR = "OpenXR";
+        // The default is listed first, as for flatScreenMode.
+        private static readonly string[] k_vrRuntimeValues = { k_vrRuntimeSteamVR, k_vrRuntimeOpenXR };
 
         private const string k_arrowRestCenter = "Center";
         private const string k_arrowRestAsiatic = "Asiatic";
@@ -292,8 +299,15 @@ namespace ValheimVRMod.Utilities
                 k_flatScreenModeAuto,
                 "Whether to disable VR completely and play on a flat screen, which is for non-VR players that want to see their" +
                 " multiplayer VR companions animations in game. Legal values: false (always use VR), true (never use VR)," +
-                " auto (use VR if and only if SteamVR is already running when the game starts).",
+                " auto (use VR if and only if the VR runtime chosen by VRRuntime is already running when the game starts).",
                 k_flatScreenModeValues);
+            vrRuntime = createImmutableStringSettingWithOverride("Immutable",
+                "VRRuntime",
+                k_vrRuntimeSteamVR,
+                "The VR runtime to run the game on. SteamVR: through SteamVR, with motion controls. OpenXR: through the" +
+                " system's active OpenXR runtime (e.g. Meta Quest Link, Virtual Desktop, Windows Mixed Reality) without" +
+                " SteamVR, with keyboard and mouse or gamepad only: UseVRControls and UseOverlayGui are taken as false.",
+                k_vrRuntimeValues);
             useVrControls = createImmutableSettingWithOverride("Immutable",
                 "UseVRControls",
                 true,
@@ -326,6 +340,9 @@ namespace ValheimVRMod.Utilities
             latchedFlatScreenMode = commandLineStringOverrides.ContainsKey(flatScreenMode.GetHashCode())
                 ? commandLineStringOverrides[flatScreenMode.GetHashCode()]
                 : flatScreenMode.Value;
+            latchedVrRuntime = commandLineStringOverrides.ContainsKey(vrRuntime.GetHashCode())
+                ? commandLineStringOverrides[vrRuntime.GetHashCode()]
+                : vrRuntime.Value;
             latchedUseVrControls = LatchWithOverride(useVrControls);
             latchedMaxVRInitializationTries = maxVRInitializationTries.Value;
             latchedUseOverlayGui = LatchWithOverride(useOverlayGui);
@@ -1707,6 +1724,13 @@ namespace ValheimVRMod.Utilities
             return latchedUseVrControls && !NonVrPlayer() && VRBackend.Active.SupportsControllers;
         }
 
+        // The runtime chosen for this session. Read once, when the backend is first used (see VRBackend.Active); it
+        // is SteamVR when that happens before the configuration has been read.
+        public static bool UseOpenXR()
+        {
+            return latchedVrRuntime == k_vrRuntimeOpenXR;
+        }
+
         public static int MaxVRInitializationTries()
         {
             return latchedMaxVRInitializationTries;
@@ -2413,7 +2437,7 @@ namespace ValheimVRMod.Utilities
         // remove the dialog needed to turn it back on, and PluginVersion is internal.
         public static bool IsRestartRequiredEntry(ConfigEntryBase entry)
         {
-            return entry == flatScreenMode || entry == useVrControls || entry == maxVRInitializationTries
+            return entry == flatScreenMode || entry == vrRuntime || entry == useVrControls || entry == maxVRInitializationTries
                 || entry == useOverlayGui || entry == bhapticsEnabled;
         }
 

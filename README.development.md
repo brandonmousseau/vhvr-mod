@@ -78,6 +78,17 @@ The mod logs an error at startup for any difference between the list and
 6. Select the folder for the build. The Unity project's build output should appear in `vhvr-mod\Unity\build`.
 7. Close Unity.
 
+### The OpenXR plugin
+The OpenXR runtime (the `VRRuntime = OpenXR` setting, headset only with keyboard and mouse) uses Unity's OpenXR
+plugin, which the Unity project above cannot build since it is made for Unity 6. Its files are checked in under
+`Unity\OpenXR` (see the README there), so nothing needs doing for a normal build. To move to another package
+version, update it in `scripts\Build-OpenXRPlugin.ps1` and run, from the mod checkout:
+
+    powershell -File scripts\Build-OpenXRPlugin.ps1
+
+It downloads the package, builds its runtime assembly against the installed game's DLLs and the XR Management
+from the Unity build above (pass `-ValheimDir` if the game is elsewhere), and rewrites the files in `Unity\OpenXR`.
+
 ## Build the mod
 1. Open Visual Studio, and choose "Open a project or solution"
 2. Navigate to the the mod source folder, then `ValheimVRMod\ValheimVRMod.sln`.

@@ -1,0 +1,35 @@
+<Project>
+  <!--
+    Settings for building the OpenXR package's runtime assembly from its sources, against the DLLs of the installed
+    game and the XR Management the mod ships. Valheim's Unity project does not use OpenXR, so it is not in the game,
+    and the mod's own Unity project cannot build a package made for Unity 6.
+    Run Build-OpenXRPlugin.ps1 rather than building these projects directly: it fetches the package sources first.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Deterministic>true</Deterministic>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <!-- Package code is built as it is: its warnings are not ours to fix. -->
+    <NoWarn>$(NoWarn);CS0067;CS0108;CS0114;CS0162;CS0168;CS0169;CS0414;CS0618;CS0649;CS0672;CS1998;CS8632</NoWarn>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <CommonDir Condition="'$(CommonDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
+    <ValheimManagedDir Condition="'$(ValheimManagedDir)' == ''">$(CommonDir)Valheim\valheim_Data\Managed\</ValheimManagedDir>
+    <PackagesDir Condition="'$(PackagesDir)' == ''">$(MSBuildThisFileDirectory)packages\</PackagesDir>
+    <OutputPath>$(MSBuildThisFileDirectory)bin\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <!-- The scripting defines of a Unity 6000.0 Windows x64 player. -->
+    <DefineConstants>UNITY_6000_0_OR_NEWER;UNITY_2023_2_OR_NEWER;UNITY_2023_1_OR_NEWER;UNITY_2022_3_OR_NEWER;UNITY_2022_2_OR_NEWER;UNITY_2022_1_OR_NEWER;UNITY_2021_3_OR_NEWER;UNITY_2021_2_OR_NEWER;UNITY_2021_1_OR_NEWER;UNITY_2020_3_OR_NEWER;UNITY_2020_2_OR_NEWER;UNITY_2020_1_OR_NEWER;UNITY_2019_4_OR_NEWER;UNITY_2019_3_OR_NEWER;UNITY_2019_1_OR_NEWER;UNITY_STANDALONE_WIN;UNITY_STANDALONE;UNITY_64;ENABLE_VR;ENABLE_INPUT_SYSTEM;ENABLE_LEGACY_INPUT_MANAGER</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(ValheimManagedDir)UnityEngine*.dll" Exclude="$(ValheimManagedDir)UnityEngine.SpatialTracking.dll;$(ValheimManagedDir)UnityEngine.XR.LegacyInputHelpers.dll;$(ValheimManagedDir)UnityEngine.UI.dll">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
