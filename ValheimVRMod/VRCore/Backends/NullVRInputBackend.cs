@@ -72,11 +72,11 @@ namespace ValheimVRMod.VRCore.Backends
         }
     }
 
-    // The keyboard of a backend without a system keyboard. Text input only asks for it with VR controls on
-    // (see TextInputPatches), which such a backend never has, so this is only reached if that changes; the physical
-    // keyboard is used instead.
+    // The keyboard of a backend without a system keyboard. Text input does not ask for it (IsAvailable, see
+    // TextInputPatches): the physical keyboard is used instead.
     public sealed class NullVRKeyboardBackend : IVRKeyboardBackend
     {
+        public bool IsAvailable => false;
         public void ListenClosed(Action listener) { }
         public void ListenInput(Action<VRKeyboardInput> listener) { }
         public void ListenDone(Action listener) { }
