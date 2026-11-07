@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Unity.XR.OpenXR</AssemblyName>
+    <PackageRoot>$(PackagesDir)com.unity.xr.openxr\package\</PackageRoot>
+    <!-- The version defines of the package's asmdef that hold in Valheim (Input System 1.19, Unity 6000.0). -->
+    <DefineConstants>$(DefineConstants);INPUT_SYSTEM_POSE_VALID;INPUT_SYSTEM_BINDING_VALIDATOR;UNITY_VIDEO</DefineConstants>
+    <XRManagementDll Condition="'$(XRManagementDll)' == ''">$(MSBuildThisFileDirectory)..\..\Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll</XRManagementDll>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The Runtime folder, without the subfolders that are assemblies of their own. -->
+    <Compile Include="$(PackageRoot)Runtime\**\*.cs"
+             Exclude="$(PackageRoot)Runtime\ConformanceAutomation\**;$(PackageRoot)Runtime\Features\MetaHandMeshData\**;$(PackageRoot)Runtime\MetaQuest\**;$(PackageRoot)Runtime\MockRuntime\**;$(PackageRoot)Runtime\OculusQuest\**;$(PackageRoot)Runtime\RuntimeDebugger\**;$(PackageRoot)Runtime\TestTooling\**" />
+    <!-- Built against the XR Management the mod already ships for OpenVR (4.0.1), so that both loaders share it. -->
+    <Reference Include="$(XRManagementDll)" Private="false" />
+    <Reference Include="$(ValheimManagedDir)Unity.InputSystem.dll" Private="false" />
+  </ItemGroup>
+</Project>
