@@ -13,10 +13,9 @@ namespace ValheimVRMod.VRCore.Backends
     // soon as they are enabled (SteamVR_Behaviour, SteamVR_Render, SteamVR_Behaviour_Pose, Hand...), so the prefab is
     // instantiated under an inactive parent and stripped before anything in it is enabled.
     //
-    // Nothing is tracked but the head. The hands are kept as inert stand-ins on the prefab's hand objects, never
-    // active and with nothing to vibrate, as much of the mod expects VRPlayer.leftHand and rightHand to exist even
-    // without VR controls, as they do under SteamVR. There are no laser pointers (GetPointer() is null), and the body
-    // tracking and tracked objects track nothing.
+    // The prefab's hand objects get an OpenXRHand, which follows its controller as SteamVR's Hand and
+    // SteamVR_Behaviour_Pose did, and an OpenXRLaserPointer in place of SteamVR_LaserPointer. No controller or hand
+    // model is drawn, and there is nothing to vibrate yet. The body tracking and tracked objects track nothing.
     public sealed class OpenXRRigBackend : IVRRigBackend
     {
         // Components of the SteamVR plugin that never reach the runtime and that the mod relies on: the fade drawn
@@ -47,9 +46,14 @@ namespace ValheimVRMod.VRCore.Backends
                 }
             }
             stripSteamVR(rig);
+            attachAudioListener(rig, hmd);
             foreach (var handObject in handObjects)
             {
-                handObject.AddComponent<OpenXRInertHand>();
+                XRHand side = handObject.name == VRPlayer.LEFT_HAND ? XRHand.Left : XRHand.Right;
+                var hand = handObject.AddComponent<OpenXRHand>();
+                hand.Hand = side;
+                var pointer = handObject.AddComponent<OpenXRLaserPointer>();
+                pointer.Source = hand.Source;
             }
             var marker = rig.AddComponent<OpenXRRigPlayerMarker>();
             marker.hmdTransform = hmd;
@@ -75,7 +79,7 @@ namespace ValheimVRMod.VRCore.Backends
 
         public VRHand[] GetHands(GameObject root)
         {
-            var native = root.GetComponentsInChildren<OpenXRInertHand>();
+            var native = root.GetComponentsInChildren<OpenXRHand>();
             var result = new VRHand[native.Length];
             for (int i = 0; i < native.Length; i++)
             {
@@ -84,9 +88,10 @@ namespace ValheimVRMod.VRCore.Backends
             return result;
         }
 
-        private readonly Dictionary<OpenXRInertHand, InertHand> hands = new Dictionary<OpenXRInertHand, InertHand>();
+        private readonly Dictionary<OpenXRHand, HandView> hands = new Dictionary<OpenXRHand, HandView>();
+        private readonly Dictionary<OpenXRLaserPointer, PointerView> pointers = new Dictionary<OpenXRLaserPointer, PointerView>();
 
-        private InertHand Wrap(OpenXRInertHand hand)
+        private HandView Wrap(OpenXRHand hand)
         {
             if (hand == null)
             {
@@ -94,12 +99,25 @@ namespace ValheimVRMod.VRCore.Backends
             }
             if (!hands.TryGetValue(hand, out var wrapped))
             {
-                hands[hand] = wrapped = new InertHand(hand, this);
+                hands[hand] = wrapped = new HandView(hand, this);
             }
             return wrapped;
         }
 
-        public VRLaserPointer GetPointer(GameObject hand) => null;
+        public VRLaserPointer GetPointer(GameObject hand)
+        {
+            var pointer = hand.GetComponent<OpenXRLaserPointer>();
+            if (pointer == null)
+            {
+                return null;
+            }
+            if (!pointers.TryGetValue(pointer, out var wrapped))
+            {
+                pointers[pointer] = wrapped = new PointerView(pointer);
+                pointer.Sender = wrapped;
+            }
+            return wrapped;
+        }
         public VRTrackingProvider AddBodyTracking(GameObject root) => new NullTrackingProvider(root.AddComponent<OpenXRInertTracking>());
         public VRTrackedObject AddTrackedObject(GameObject root) => new NullTrackedObject(root.AddComponent<OpenXRInertTracking>());
 
@@ -133,6 +151,21 @@ namespace ValheimVRMod.VRCore.Backends
             driver.UseRelativeTransform = false;
             LogInfo("Head tracking: TrackedPoseDriver on " + camera.name + ".");
             return camera.transform;
+        }
+
+        // SteamVR's Player (stripped with the rest) puts the rig's audio listener (FollowHead, a child of the rig's
+        // root in the prefab) on the head when it activates the rig. Without that it stays at the play area's origin,
+        // facing the rig's forward, and sounds come from the wrong side as the head turns or moves.
+        private static void attachAudioListener(GameObject rig, Transform hmd)
+        {
+            AudioListener listener = rig.GetComponentInChildren<AudioListener>(true);
+            if (listener != null && hmd != null)
+            {
+                listener.transform.SetParent(hmd, false);
+                listener.transform.localPosition = Vector3.zero;
+                listener.transform.localRotation = Quaternion.identity;
+            }
+            LogInfo("Audio listener: " + (listener == null ? "none in the rig" : "on " + listener.transform.parent?.name) + ".");
         }
 
         private static void stripSteamVR(GameObject rig)
@@ -206,18 +239,20 @@ namespace ValheimVRMod.VRCore.Backends
             }
         }
 
-        sealed class InertHand : VRHand
+        sealed class HandView : VRHand
         {
-            readonly OpenXRInertHand hand;
+            readonly OpenXRHand hand;
             readonly OpenXRRigBackend rig;
-            public InertHand(OpenXRInertHand hand, OpenXRRigBackend rig) : base(hand) { this.hand = hand; this.rig = rig; }
-            public override bool isActive => false;
-            public override bool isPoseValid => false;
+            public HandView(OpenXRHand hand, OpenXRRigBackend rig) : base(hand) { this.hand = hand; this.rig = rig; }
+            // As SteamVR's Hand: active while its controller is there, valid while it is tracked.
+            public override bool isActive =>
+                hand.isActiveAndEnabled && VRBackend.Active.Input is OpenXRInputBackend input && input.IsConnected(hand.Hand);
+            public override bool isPoseValid => hand.PoseIsValid;
             public override VRHand otherHand
             {
                 get
                 {
-                    foreach (var other in hand.transform.root.GetComponentsInChildren<OpenXRInertHand>(true))
+                    foreach (var other in hand.transform.root.GetComponentsInChildren<OpenXRHand>(true))
                     {
                         if (other != hand)
                         {
@@ -228,9 +263,29 @@ namespace ValheimVRMod.VRCore.Backends
                 }
             }
             public override VRHapticAction hapticAction => VRInputActions.valheim_Haptic;
-            public override Vector3 GetTrackedObjectVelocity() => Vector3.zero;
-            public override Vector3 GetTrackedObjectAngularVelocity() => Vector3.zero;
+            public override Vector3 GetTrackedObjectVelocity() => isActive ? hand.GetVelocity() : Vector3.zero;
+            public override Vector3 GetTrackedObjectAngularVelocity() => isActive ? hand.GetAngularVelocity() : Vector3.zero;
+            // There is no controller or hand model to show or hide.
             public override void SetVisibility(bool visible) { }
+        }
+
+        sealed class PointerView : VRLaserPointer
+        {
+            readonly OpenXRLaserPointer native;
+            public PointerView(OpenXRLaserPointer pointer) : base(pointer) { native = pointer; }
+            public override event VRPointerEventHandler PointerTracking
+            {
+                add { native.PointerTracking += value; }
+                remove { native.PointerTracking -= value; }
+            }
+            public override int raycastLayerMask { get => native.raycastLayerMask; set => native.raycastLayerMask = value; }
+            public override Vector3 rayStartingPosition { get => native.rayStartingPosition; set => native.rayStartingPosition = value; }
+            public override Quaternion rayDirection { get => native.rayDirection; set => native.rayDirection = value; }
+            public override GameObject holder => native.holder;
+            public override GameObject pointer => native.pointer;
+            public override void setUsePointer(bool active) => native.setUsePointer(active);
+            public override void setVisible(bool visible) => native.setVisible(visible);
+            public override bool pointerIsActive() => native.pointerIsActive();
         }
 
         sealed class NullTrackingProvider : VRTrackingProvider
@@ -255,9 +310,6 @@ namespace ValheimVRMod.VRCore.Backends
     {
         public Transform hmdTransform;
     }
-
-    // Where an OpenXR rig's stand-in for a hand hangs (see OpenXRRigBackend.InertHand).
-    public sealed class OpenXRInertHand : MonoBehaviour { }
 
     // What the body tracking and tracked objects of an OpenXR rig hang on: they track nothing.
     public sealed class OpenXRInertTracking : MonoBehaviour { }
