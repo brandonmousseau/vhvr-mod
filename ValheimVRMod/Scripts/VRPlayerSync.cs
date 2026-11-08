@@ -76,13 +76,34 @@ namespace ValheimVRMod.Scripts {
             player = GetComponent<Player>();
             // The remote IK targets are kept in the space of the player root, so that they move with the root
             // whenever it moves (ZSyncTransform moves it in FixedUpdate in no fixed order with this script).
+            // They are under a container rather than the root itself: VRIK scales the root by VrikCreator.ROOT_SCALE,
+            // which would shrink every offset received from the owner, pulling the head down toward the pelvis and
+            // hunching the body. The container cancels the root's scale (updateRemoteTargetsScale).
             // The local player replaces camera and hands and only uses world poses, so this is harmless there.
-            camera.transform.SetParent(transform, false);
-            leftHand.transform.SetParent(transform, false);
-            rightHand.transform.SetParent(transform, false);
-            pelvis.transform.SetParent(transform, false);
-            leftFoot.transform.SetParent(transform, false);
-            rightFoot.transform.SetParent(transform, false);
+            remoteTargets = new GameObject("VHVR_RemoteTargets").transform;
+            remoteTargets.SetParent(transform, false);
+            camera.transform.SetParent(remoteTargets, false);
+            leftHand.transform.SetParent(remoteTargets, false);
+            rightHand.transform.SetParent(remoteTargets, false);
+            pelvis.transform.SetParent(remoteTargets, false);
+            leftFoot.transform.SetParent(remoteTargets, false);
+            rightFoot.transform.SetParent(remoteTargets, false);
+        }
+
+        // The remote IK targets' space: the player root's position and rotation, without its scale.
+        private Transform remoteTargets;
+        private Vector3 remoteTargetsRootScale = Vector3.one;
+
+        // Follows the root's scale, which is set when VRIK is created (maybeAddVrik) rather than in Awake.
+        private void updateRemoteTargetsScale()
+        {
+            Vector3 scale = transform.localScale;
+            if (scale == remoteTargetsRootScale || scale.x == 0 || scale.y == 0 || scale.z == 0)
+            {
+                return;
+            }
+            remoteTargetsRootScale = scale;
+            remoteTargets.localScale = new Vector3(1 / scale.x, 1 / scale.y, 1 / scale.z);
         }
 
         void Start()
@@ -287,6 +308,7 @@ namespace ValheimVRMod.Scripts {
             deltaTimeCounter += dt;
             deltaTimeCounter = Mathf.Min(deltaTimeCounter, 2f);
 
+            updateRemoteTargetsScale();
             // The owner sends world offsets from its root; its root rotation turns them into the root's space.
             Quaternion toOwnerRoot = Quaternion.Inverse(zdo.GetRotation());
 
@@ -308,6 +330,8 @@ namespace ValheimVRMod.Scripts {
             extractAndUpdate(pkg, pelvis, ref clientTempRelPosPelvis, hasTempRelPos, toOwnerRoot);
 
             maybeAddVrik();
+            // Creating VRIK scales the root: cancel it before VRIK first solves.
+            updateRemoteTargetsScale();
             if (vrikSync != null)
             {
                 vrikSync.enabled = true;
