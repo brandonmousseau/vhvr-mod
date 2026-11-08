@@ -177,7 +177,9 @@ namespace ValheimVRMod.Patches {
         public static bool triggerReturn;
 
         public static void start(InputField inputField, TMP_InputField inputFieldTmp, GuiInputField inputFieldGui, bool returnOnClose = false, UnityAction closedAction = null, bool chatInput = false) {
-            if (_keyboardOpen) {
+            // Without a runtime keyboard (OpenXR) the field is left to the physical keyboard, as with VR controls
+            // off. Starting a session would fail to show the keyboard and cancel the chat.
+            if (_keyboardOpen || !VRBackend.Active.Keyboard.IsAvailable) {
                 return;
             }
             _keyboardOpen = true;
