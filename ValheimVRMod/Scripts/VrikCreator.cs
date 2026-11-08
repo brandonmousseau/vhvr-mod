@@ -97,7 +97,11 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
-            VrikUpperBodyStabilizer.Attach(vrik);
+            // Stabilizing remote player IK makes the posture weird for some reason.
+            if (isLocalPlayer)
+            {
+                VrikUpperBodyStabilizer.Attach(vrik);
+            }
 
             vrik.references.leftToes = null;
             vrik.references.rightToes = null;
