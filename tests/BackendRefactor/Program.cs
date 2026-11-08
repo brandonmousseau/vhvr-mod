@@ -46,6 +46,7 @@ static class Program
         CheckCallbacks();
         CheckBoundary();
         CheckHapticIdentity();
+        CheckRuntimeSelection();
         Console.WriteLine($"PASS: {checks} differential and contract assertions against the action catalog and original managed SteamVR SDK.");
         Console.WriteLine("Published input snapshots are simulated. Native polling, rig timing, rendering, haptics and headset acceptance remain separate gates.");
     }
@@ -282,9 +283,119 @@ static class Program
             Require(!(method.ReturnType.FullName ?? method.ReturnType.Name).Contains("Valve."), "neutral return " + method.Name);
             foreach (var argument in method.GetParameters()) Require(!(argument.ParameterType.FullName ?? argument.ParameterType.Name).Contains("Valve."), "neutral argument " + method.Name);
         }
-        Require(!typeof(VRBackend).Assembly.GetReferencedAssemblies().Any(a => a.Name!.Contains("OpenXR", StringComparison.OrdinalIgnoreCase)), "no OpenXR runtime dependency");
-        Require(typeof(VRBackend).GetProperty(nameof(VRBackend.Active))!.SetMethod == null, "stage 1 has no runtime selection UI or mutable backend");
+        Require(typeof(VRBackend).GetProperty(nameof(VRBackend.Active))!.SetMethod == null, "the backend is chosen once, not set from outside");
+        CheckOpenXRConfinement();
         Require(VROverlay.InvalidHandle == OpenVR.k_ulOverlayHandleInvalid, "native invalid overlay handle");
+    }
+    // Nothing outside the bodies of OpenXRLoaderSetup's methods may name an OpenXR type: a field, signature, base type
+    // or interface that did would load Unity.XR.OpenXR.dll with its declaring type, under SteamVR too, and fail where
+    // the plugin is not installed. (check_boundary.py confines the method bodies to that one file.)
+    static void CheckOpenXRConfinement()
+    {
+        var mod = typeof(VRBackend).Assembly;
+        Require(mod.GetReferencedAssemblies().Any(a => a.Name == "Unity.XR.OpenXR"), "the OpenXR backend is built in");
+        bool IsOpenXR(Type? type)
+        {
+            while (type != null && (type.HasElementType || type.IsGenericType && !type.IsGenericTypeDefinition))
+            {
+                if (type.IsGenericType && type.GetGenericArguments().Any(IsOpenXR)) return true;
+                type = type.HasElementType ? type.GetElementType() : type.GetGenericTypeDefinition();
+            }
+            return type?.Assembly.GetName().Name == "Unity.XR.OpenXR";
+        }
+        const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        foreach (var type in mod.GetTypes())
+        {
+            // Unity.XR.OpenXR.dll is not where this process looks (the game has it only once the mod is installed),
+            // so naming one of its types usually shows as the assembly failing to load rather than as an OpenXR type.
+            try
+            {
+                Require(!IsOpenXR(type.BaseType) && !type.GetInterfaces().Any(IsOpenXR), "no OpenXR base type: " + type.FullName);
+                foreach (var field in type.GetFields(all)) Require(!IsOpenXR(field.FieldType), "no OpenXR field: " + type.FullName + "." + field.Name);
+                foreach (var property in type.GetProperties(all)) Require(!IsOpenXR(property.PropertyType), "no OpenXR property: " + type.FullName + "." + property.Name);
+                foreach (var method in type.GetMethods(all).Cast<MethodBase>().Concat(type.GetConstructors(all)))
+                {
+                    Require(!(method is MethodInfo info) || !IsOpenXR(info.ReturnType), "no OpenXR return: " + type.FullName + "." + method.Name);
+                    foreach (var parameter in method.GetParameters()) Require(!IsOpenXR(parameter.ParameterType), "no OpenXR parameter: " + type.FullName + "." + method.Name);
+                }
+            }
+            catch (FileNotFoundException e) when (e.FileName?.StartsWith("Unity.XR.OpenXR") == true)
+            {
+                Require(false, "no OpenXR type in the members of " + type.FullName);
+            }
+        }
+    }
+
+    // VRRuntime picks the backend, and OpenXR turns VR controls and the overlay GUI off whatever their settings. Runs
+    // last: it leaves VRInputActions resolved against the OpenXR backend's inert input.
+    static void CheckRuntimeSelection()
+    {
+        var config = typeof(VRBackend).Assembly.GetType("ValheimVRMod.Utilities.VHVRConfig", true)!;
+        void Set(string name, object? value) => config.GetField(name, BindingFlags.Static | BindingFlags.NonPublic)!.SetValue(null, value);
+        bool Call(string name) => (bool)config.GetMethod(name, BindingFlags.Static | BindingFlags.Public)!.Invoke(null, null)!;
+        var active = typeof(VRBackend).GetField("active", BindingFlags.Static | BindingFlags.NonPublic)!;
+
+        Require(VRBackend.Active is SteamVRBackend, "SteamVR before VRRuntime is read, and by default");
+        Set("flatScreenModeResolved", (bool?)false);
+        Set("latchedUseVrControls", true);
+        Set("latchedUseOverlayGui", true);
+        Require(Call("UseVrControls"), "SteamVR keeps VR controls");
+        Set("latchedUseVrControls", false);
+        Require(Call("GetUseOverlayGui"), "SteamVR keeps the overlay GUI");
+
+        Set("latchedVrRuntime", "OpenXR");
+        Require(VRBackend.Active is SteamVRBackend, "the backend is kept once chosen");
+        active.SetValue(null, null);
+        var openXr = VRBackend.Active;
+        Require(openXr is OpenXRBackend && openXr.RuntimeName == "OpenXR", "OpenXR chosen by VRRuntime");
+        Require(!Call("GetUseOverlayGui"), "no overlay GUI under OpenXR");
+        Set("latchedUseVrControls", true);
+        Require(!Call("UseVrControls"), "no VR controls under OpenXR");
+        Require(!openXr.SupportsControllers && !openXr.SupportsOverlay && openXr.Overlay == null, "OpenXR capabilities");
+        Require(!openXr.IsControllerConnected(VRInputSource.LeftHand) && !openXr.IsControllerConnected(VRInputSource.RightHand), "no controllers under OpenXR");
+        Require(!openXr.GetConnectedTrackers().Any() && openXr.InitializeInput(), "no trackers or input system under OpenXR");
+        Require(openXr.Keyboard.Show("") != null, "no system keyboard under OpenXR");
+
+        // Every catalog action resolves to an action that is never bound, pressed, moved, valid or heard from.
+        openXr.Input.Declare(VRInputActions.Sets, VRInputActions.Actions);
+        VRInputActions.Initialize(openXr.Input);
+        int calls = 0;
+        foreach (var property in typeof(VRInputActions).GetProperties(BindingFlags.Static | BindingFlags.Public))
+        {
+            var value = property.GetValue(null);
+            Require(value != null, "inert action resolved: " + property.Name);
+            foreach (var source in Enum.GetValues<VRInputSource>())
+            {
+                switch (value)
+                {
+                    case VRBooleanAction b:
+                        Require(!b.state && !b.GetState(source) && !b.GetStateDown(source) && !b.GetStateUp(source) && !b.GetActiveBinding(source) && !b[source].activeBinding, "inert boolean " + property.Name);
+                        b.AddOnStateDownListener((_, _) => calls++, source);
+                        b.AddOnStateUpListener((_, _) => calls++, source);
+                        break;
+                    case VRVector2Action a:
+                        Require(a.axis == Vector2.zero && a.GetAxis(source) == Vector2.zero && !a.activeBinding, "inert axis " + property.Name);
+                        a.AddOnChangeListener((_, _, _, _) => calls++, source);
+                        break;
+                    case VRPoseAction p:
+                        Require(!p.GetPoseIsValid(source) && !p.GetDeviceIsConnected(source) && p.GetLocalPosition(source) == Vector3.zero, "inert pose " + property.Name);
+                        break;
+                    case VRHapticAction h:
+                        h.Execute(0, 1, 1, 1, source);
+                        break;
+                    case VRActionSet s:
+                        s.Activate(source);
+                        Require(!s.IsActive(source), "inert action set " + property.Name);
+                        break;
+                    default:
+                        throw new Exception("FAIL: unexpected action type " + value!.GetType());
+                }
+            }
+        }
+        Action update = () => calls++;
+        VRInput.onNonVisualActionsUpdated += update;
+        VRInput.onNonVisualActionsUpdated -= update;
+        Require(calls == 0, "no listener of the inert input is called");
     }
     static void CheckHapticIdentity()
     {

@@ -17,6 +17,8 @@ namespace ValheimVRMod.VRCore.Backends
     }
     public interface IVRKeyboardBackend
     {
+        // Whether the runtime has a keyboard to show at all. Without one, text is typed on the physical keyboard.
+        bool IsAvailable { get; }
         void ListenClosed(Action listener);
         void ListenInput(Action<VRKeyboardInput> listener);
         void ListenDone(Action listener);
