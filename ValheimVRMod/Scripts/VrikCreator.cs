@@ -81,10 +81,59 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.pelvisTarget = new GameObject().transform;
             if (Player.m_localPlayer != null && Player.m_localPlayer.gameObject == playerObject)
             {
+                // The connectors of an earlier VRIK (e.g. before dying) stay parented to the persistent VR hands.
+                DestroyIfAlive(localPlayerLeftHandConnector);
+                DestroyIfAlive(localPlayerRightHandConnector);
                 localPlayerLeftHandConnector = new GameObject().transform;
                 localPlayerRightHandConnector = new GameObject().transform;
             }
             return vrik;
+        }
+
+        private const string REMOTE_HAND_CONNECTOR_NAME = "VHVR_RemoteHandConnector";
+
+        private static bool HasRequiredReferences(VRIK vrik)
+        {
+            return vrik != null && vrik.references.head != null && vrik.references.leftHand != null && vrik.references.rightHand != null;
+        }
+
+        // Destroys the targets that initialize() created for this VRIK, and the hand connectors of a remote player,
+        // before the VRIK itself is destroyed. The targets live under the sync/VR transforms, which outlive the VRIK.
+        // The local player's connectors stay: other scripts refer to them, and the next VRIK replaces them.
+        public static void DestroyTargets(VRIK vrik)
+        {
+            if (vrik == null)
+            {
+                return;
+            }
+            DestroyArmTarget(vrik.solver.leftArm.target);
+            DestroyArmTarget(vrik.solver.rightArm.target);
+            DestroyIfAlive(vrik.solver.leftLeg.target);
+            DestroyIfAlive(vrik.solver.rightLeg.target);
+            DestroyIfAlive(vrik.solver.spine.headTarget);
+            DestroyIfAlive(vrik.solver.spine.pelvisTarget);
+        }
+
+        private static void DestroyArmTarget(Transform target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+            Transform connector = target.parent;
+            if (connector != null && connector.name == REMOTE_HAND_CONNECTOR_NAME)
+            {
+                GameObject.Destroy(connector.gameObject);
+            }
+            GameObject.Destroy(target.gameObject);
+        }
+
+        private static void DestroyIfAlive(Transform transform)
+        {
+            if (transform != null)
+            {
+                GameObject.Destroy(transform.gameObject);
+            }
         }
 
         private static bool InitializeTargts(
@@ -92,7 +141,7 @@ namespace ValheimVRMod.Scripts {
         {
             vrik.AutoDetectReferences();
 
-            if (vrik == null || vrik.references.head == null || vrik.references.leftHand == null || vrik.references.rightHand == null)
+            if (!HasRequiredReferences(vrik))
             {
                 return false;
             }
@@ -107,11 +156,11 @@ namespace ValheimVRMod.Scripts {
             vrik.references.rightToes = null;
             vrik.references.root.localScale = Vector3.one * ROOT_SCALE;
 
-            Transform leftHandConnector = isLocalPlayer ? localPlayerLeftHandConnector : new GameObject().transform;
+            Transform leftHandConnector = isLocalPlayer ? localPlayerLeftHandConnector : new GameObject(REMOTE_HAND_CONNECTOR_NAME).transform;
             leftHandConnector.SetParent(leftController, false);
             vrik.solver.leftArm.target.SetParent(leftHandConnector, false);
 
-            Transform rightHandConnector = isLocalPlayer ? localPlayerRightHandConnector : new GameObject().transform;
+            Transform rightHandConnector = isLocalPlayer ? localPlayerRightHandConnector : new GameObject(REMOTE_HAND_CONNECTOR_NAME).transform;
             rightHandConnector.SetParent(rightController, false);
             vrik.solver.rightArm.target.SetParent(rightHandConnector, false);
 
@@ -166,6 +215,15 @@ namespace ValheimVRMod.Scripts {
 
         public static VRIK initialize(
             GameObject playerGameObject, Transform leftController, Transform rightController, Transform camera, Transform pelvis, Transform leftFoot, Transform rightFoot) {
+            // Callers retry every step until this succeeds, so nothing may be created before it is known to succeed:
+            // the targets made for a failed attempt used to be left behind in the scene on every retry.
+            VRIK detected = playerGameObject.GetOrAddComponent<VRIK>();
+            detected.AutoDetectReferences();
+            if (!HasRequiredReferences(detected))
+            {
+                GameObject.Destroy(detected);
+                return null;
+            }
             VRIK vrik = CreateTargets(playerGameObject);
             bool success =
                 InitializeTargts(

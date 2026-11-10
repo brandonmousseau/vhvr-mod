@@ -137,6 +137,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            VrikCreator.DestroyTargets(vrikSync);
             Destroy(vrikSync);
             vrikSync = null;
             Destroy(GetComponent<RemoteClothRemover>());
