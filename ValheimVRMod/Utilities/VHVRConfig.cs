@@ -306,7 +306,8 @@ namespace ValheimVRMod.Utilities
                 k_vrRuntimeSteamVR,
                 "The VR runtime to run the game on. SteamVR: through SteamVR, with motion controls. OpenXR: through the" +
                 " system's active OpenXR runtime (e.g. Meta Quest Link, Virtual Desktop, Windows Mixed Reality) without" +
-                " SteamVR, with keyboard and mouse or gamepad only: UseVRControls and UseOverlayGui are taken as false.",
+                " SteamVR, with motion controls on the controller's default bindings (no rebinding, haptics, body" +
+                " trackers or finger tracking yet) and text typed on the physical keyboard: UseOverlayGui is taken as false.",
                 k_vrRuntimeValues);
             useVrControls = createImmutableSettingWithOverride("Immutable",
                 "UseVRControls",

@@ -10,9 +10,10 @@ using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.VRCore.Backends
 {
-    // The headset through the system's OpenXR runtime instead of SteamVR, played with keyboard and mouse or a gamepad:
-    // head tracking and stereo rendering only. No controllers, hands, laser pointers, haptics, body trackers, overlays
-    // or system keyboard, so UseVrControls() and GetUseOverlayGui() are false whatever the settings say.
+    // The headset and controllers through the system's OpenXR runtime instead of SteamVR: head tracking, stereo
+    // rendering, the hands, laser pointers and actions with the default bindings of the controller (see
+    // OpenXRInputBackend). No haptics, body trackers, finger tracking, binding UI, overlays or system keyboard, so
+    // GetUseOverlayGui() is false whatever the settings say and text is typed on the physical keyboard.
     //
     // SteamVR must never start under this backend. Nothing here calls into OpenVR, and the SteamVR components of the
     // rig prefab, some of which initialize SteamVR when enabled, are removed before the rig is enabled (see
@@ -20,9 +21,10 @@ namespace ValheimVRMod.VRCore.Backends
     public sealed class OpenXRBackend : IVRBackend
     {
         public string RuntimeName => "OpenXR";
-        public bool SupportsControllers => false;
+        public bool SupportsControllers => true;
         public bool SupportsOverlay => false;
-        public IVRInputBackend Input { get; } = new NullVRInputBackend();
+        public IVRInputBackend Input => input;
+        private readonly OpenXRInputBackend input = new OpenXRInputBackend();
         public IVRRigBackend Rig { get; } = new OpenXRRigBackend();
         public IVRKeyboardBackend Keyboard { get; } = new NullVRKeyboardBackend();
         public IVROverlayBackend Overlay => null;
@@ -63,6 +65,7 @@ namespace ValheimVRMod.VRCore.Backends
                 return false;
             }
             useFloorOrigin();
+            input.Start();
             return true;
         }
 
@@ -86,7 +89,7 @@ namespace ValheimVRMod.VRCore.Backends
             }
         }
 
-        // There is no separate input system to bring up: there are no actions.
+        // There is no separate input system to bring up: the actions come with the runtime (StartVR()).
         public bool InitializeInput() => true;
 
         // An OpenXR runtime has no notion of running before an application connects to it, and connecting would
@@ -116,7 +119,16 @@ namespace ValheimVRMod.VRCore.Backends
             return installed;
         }
 
-        public bool IsControllerConnected(VRInputSource source) => false;
+        public bool IsControllerConnected(VRInputSource source)
+        {
+            switch (source)
+            {
+                case VRInputSource.LeftHand: return input.IsConnected(XRHand.Left);
+                case VRInputSource.RightHand: return input.IsConnected(XRHand.Right);
+                case VRInputSource.Any: return input.IsConnected(XRHand.Left) || input.IsConnected(XRHand.Right);
+                default: return false;
+            }
+        }
         public IEnumerable<VRTrackerInfo> GetConnectedTrackers() => new VRTrackerInfo[0];
 
         // The rig keeps SteamVR_Fade on its camera: it draws the fade itself and only reaches OpenVR to fade the

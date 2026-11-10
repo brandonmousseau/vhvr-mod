@@ -326,8 +326,8 @@ static class Program
         }
     }
 
-    // VRRuntime picks the backend, and OpenXR turns VR controls and the overlay GUI off whatever their settings. Runs
-    // last: it leaves VRInputActions resolved against the OpenXR backend's inert input.
+    // VRRuntime picks the backend, and OpenXR turns the overlay GUI off whatever its setting. Runs last: it leaves
+    // VRInputActions resolved against the OpenXR backend's input, inert until the runtime starts.
     static void CheckRuntimeSelection()
     {
         var config = typeof(VRBackend).Assembly.GetType("ValheimVRMod.Utilities.VHVRConfig", true)!;
@@ -350,13 +350,17 @@ static class Program
         Require(openXr is OpenXRBackend && openXr.RuntimeName == "OpenXR", "OpenXR chosen by VRRuntime");
         Require(!Call("GetUseOverlayGui"), "no overlay GUI under OpenXR");
         Set("latchedUseVrControls", true);
-        Require(!Call("UseVrControls"), "no VR controls under OpenXR");
-        Require(!openXr.SupportsControllers && !openXr.SupportsOverlay && openXr.Overlay == null, "OpenXR capabilities");
-        Require(!openXr.IsControllerConnected(VRInputSource.LeftHand) && !openXr.IsControllerConnected(VRInputSource.RightHand), "no controllers under OpenXR");
-        Require(!openXr.GetConnectedTrackers().Any() && openXr.InitializeInput(), "no trackers or input system under OpenXR");
-        Require(openXr.Keyboard.Show("") != null, "no system keyboard under OpenXR");
+        Require(Call("UseVrControls"), "VR controls under OpenXR");
+        Set("latchedUseVrControls", false);
+        Require(!Call("UseVrControls"), "VR controls off by setting under OpenXR");
+        Require(openXr.SupportsControllers && !openXr.SupportsOverlay && openXr.Overlay == null, "OpenXR capabilities");
+        Require(!openXr.IsControllerConnected(VRInputSource.LeftHand) && !openXr.IsControllerConnected(VRInputSource.RightHand), "no controllers before the OpenXR runtime starts");
+        Require(!openXr.GetConnectedTrackers().Any() && openXr.InitializeInput(), "no trackers or separate input system under OpenXR");
+        Require(!openXr.Keyboard.IsAvailable && openXr.Keyboard.Show("") != null, "no system keyboard under OpenXR");
+        Require(new SteamVRKeyboardBackend().IsAvailable, "SteamVR has a system keyboard");
 
-        // Every catalog action resolves to an action that is never bound, pressed, moved, valid or heard from.
+        // Before the runtime starts, every catalog action resolves to an action that is not bound, pressed, moved,
+        // valid or heard from, without touching Unity. Action sets keep their activation.
         openXr.Input.Declare(VRInputActions.Sets, VRInputActions.Actions);
         VRInputActions.Initialize(openXr.Input);
         int calls = 0;
@@ -385,7 +389,9 @@ static class Program
                         break;
                     case VRActionSet s:
                         s.Activate(source);
-                        Require(!s.IsActive(source), "inert action set " + property.Name);
+                        Require(s.IsActive(source), "action set activated " + property.Name);
+                        s.Deactivate(source);
+                        Require(!s.IsActive(source), "action set deactivated " + property.Name);
                         break;
                     default:
                         throw new Exception("FAIL: unexpected action type " + value!.GetType());

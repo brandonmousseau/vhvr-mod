@@ -9,6 +9,7 @@ namespace ValheimVRMod.VRCore.Backends
         private const uint KeyboardFlags = (uint)EKeyboardFlags.KeyboardFlag_Minimal | KeyboardFlagShowArrowKeys;
         // Older runtimes ignore this flag, as in the original keyboard implementation.
         private const uint KeyboardFlagShowArrowKeys = 1 << 2;
+        public bool IsAvailable => true;
         public void ListenClosed(Action listener) => SteamVR_Events.System(EVREventType.VREvent_KeyboardClosed).Listen(e => listener());
         public void ListenDone(Action listener) => SteamVR_Events.System(EVREventType.VREvent_KeyboardDone).Listen(e => listener());
         public void ListenInput(Action<VRKeyboardInput> listener)

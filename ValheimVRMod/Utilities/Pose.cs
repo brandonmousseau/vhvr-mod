@@ -239,6 +239,9 @@ namespace ValheimVRMod.Utilities {
                 case BackReachLocation.RightWaistRadialMedial:
                 case BackReachLocation.RightWaistRadialLateral:
                     return isSteady(isRightHand, maxHeadSpeed: 4f, maxHandSpeed: 6f) ? backReach : BackReachLocation.None;
+                case BackReachLocation.LeftShoulderRadialMedial:
+                case BackReachLocation.RightShoulderRadialMedial:
+                    return isSteady(isRightHand, maxHeadSpeed: 16f, maxHandSpeed: 16f) ? backReach : BackReachLocation.None;
                 default:
                     return isSteady(isRightHand, maxHeadSpeed: 1.5f, maxHandSpeed: 1.5f) ? backReach : BackReachLocation.None;
             }

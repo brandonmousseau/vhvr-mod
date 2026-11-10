@@ -1,7 +1,10 @@
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.XR.Management;
 using UnityEngine.XR.OpenXR;
+using UnityEngine.XR.OpenXR.Features;
+using UnityEngine.XR.OpenXR.Features.Interactions;
 using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.VRCore.Backends
@@ -23,9 +26,26 @@ namespace ValheimVRMod.VRCore.Backends
             }
 
             OpenXRSettings openXrSettings = ScriptableObject.CreateInstance<OpenXRSettings>();
-            // No features: KB+M play needs no interaction profiles, and every other feature is optional.
             // Multi pass, as with OpenVR (Open VR Settings.asset): Valheim's shaders are not instancing aware.
             openXrSettings.renderMode = OpenXRSettings.RenderMode.MultiPass;
+            var features = createInteractionProfiles();
+            // OpenXRSettings.features is internal: a Unity project fills it in the editor, from the features found in
+            // the project. The loader reads it when it initializes, so it must be set before.
+            FieldInfo featuresField = typeof(OpenXRSettings).GetField("features", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (featuresField == null)
+            {
+                LogError("OpenXRSettings.features not found: the controllers will not be available.");
+            }
+            else
+            {
+                // Typed in this method's body only: no signature of the mod may name an OpenXR type.
+                var typed = new OpenXRFeature[features.Length];
+                for (int i = 0; i < features.Length; i++)
+                {
+                    typed[i] = (OpenXRFeature)features[i];
+                }
+                featuresField.SetValue(openXrSettings, typed);
+            }
 
             // The loader for runtimes without pre-initialization: the mod is loaded long after the graphics device
             // is created, so the runtime gets the device Unity already has.
@@ -50,6 +70,10 @@ namespace ValheimVRMod.VRCore.Backends
             {
                 settings.hideFlags |= HideFlags.DontUnloadUnusedAsset;
             }
+            foreach (ScriptableObject feature in features)
+            {
+                feature.hideFlags |= HideFlags.DontUnloadUnusedAsset;
+            }
 
             if (XRGeneralSettings.Instance != general)
             {
@@ -57,6 +81,35 @@ namespace ValheimVRMod.VRCore.Backends
                 return null;
             }
             return manager;
+        }
+
+        // The interaction profiles, each a feature that suggests its controller's bindings to the runtime and gives the
+        // controller as a legacy XR input device, which is what the mod reads (OpenXRController). None needs an
+        // extension. The runtime picks the profile of the controllers in use, or remaps them to one of these; the
+        // Khronos simple controller is the last resort.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ScriptableObject[] createInteractionProfiles()
+        {
+            var types = new[]
+            {
+                typeof(OculusTouchControllerProfile),
+                typeof(ValveIndexControllerProfile),
+                typeof(HTCViveControllerProfile),
+                typeof(MicrosoftMotionControllerProfile),
+                typeof(KHRSimpleControllerProfile),
+            };
+            // Filled in from the feature's attribute when a project is built, and only used to sort and log.
+            FieldInfo nameUi = typeof(OpenXRFeature).GetField("nameUi", BindingFlags.Instance | BindingFlags.NonPublic);
+            var features = new ScriptableObject[types.Length];
+            for (int i = 0; i < types.Length; i++)
+            {
+                var feature = (OpenXRFeature)ScriptableObject.CreateInstance(types[i]);
+                feature.name = types[i].Name;
+                nameUi?.SetValue(feature, types[i].Name);
+                feature.enabled = true;
+                features[i] = feature;
+            }
+            return features;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
