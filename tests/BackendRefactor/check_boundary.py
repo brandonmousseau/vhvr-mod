@@ -15,7 +15,7 @@ def code_only(text):
     return re.sub(r'//[^\n]*|/\*[\s\S]*?\*/|@"(?:""|[^"])*"|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'', ' ', text)
 
 STEAMVR_SDK = r'Valve\.VR|Unity\.XR\.OpenVR|\bSteamVR_\w+|\bOpenVR\.|\bCVR\w+|\bEVR\w+|\bVREvent_\w+|\bETracked\w+|\bShaderLoader\b'
-OPENXR_SDK = r'UnityEngine\.XR\.OpenXR|\bOpenXR(?:Settings|Loader(?!Setup)\w*|Feature\w*|Input)\b'
+OPENXR_SDK = r'UnityEngine\.XR\.OpenXR|\bVHVR\.OpenXR\b|\bVhvrActionsFeature\b|\bOpenXR(?:Settings|Loader(?!Setup)\w*|Feature\w*|Input)\b'
 # The SteamVR SDK only in the SteamVR backend (SteamVR*.cs and the manifest helper it calls), and the OpenXR SDK only
 # in the one file that names its types, so that neither runtime's assemblies are loaded for the other.
 for path in CORE.rglob('*.cs'):

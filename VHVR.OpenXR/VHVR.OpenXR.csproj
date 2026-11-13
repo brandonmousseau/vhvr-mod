@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    VHVR's own OpenXR actions (VhvrActionsFeature), apart from ValheimVRMod.dll: a type that derives from the OpenXR
+    plugin's OpenXRFeature would load Unity.XR.OpenXR.dll with the mod, under SteamVR too. Shipped next to
+    Unity.XR.OpenXR.dll in valheim_Data\Managed and only loaded under the OpenXR runtime, through
+    ValheimVRMod\VRCore\Backends\OpenXRLoaderSetup.cs. Built by ValheimVRMod.csproj before the mod.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>VHVR.OpenXR</AssemblyName>
+    <RootNamespace>VHVR.OpenXR</RootNamespace>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Deterministic>true</Deterministic>
+    <DebugType>portable</DebugType>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <CommonDir Condition="'$(CommonDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
+    <ValheimManagedDir Condition="'$(ValheimManagedDir)' == ''">$(CommonDir)Valheim\valheim_Data\Managed\</ValheimManagedDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(ValheimManagedDir)UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(ValheimManagedDir)UnityEngine.XRModule.dll" Private="false" />
+    <Reference Include="$(ValheimManagedDir)UnityEngine.SubsystemsModule.dll" Private="false" />
+    <!-- Checked in, see Unity\OpenXR\README.md. -->
+    <Reference Include="$(MSBuildThisFileDirectory)..\Unity\OpenXR\Managed\Unity.XR.OpenXR.dll" Private="false" />
+    <Reference Include="$(MSBuildThisFileDirectory)..\Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll" Private="false" />
+  </ItemGroup>
+</Project>

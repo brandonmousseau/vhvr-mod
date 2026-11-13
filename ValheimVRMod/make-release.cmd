@@ -25,6 +25,7 @@ copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\UnitySubsystems\XRSDKOpenVR\Unity
 
 :: OpenXR runtime (VRRuntime = OpenXR), checked in: see Unity\OpenXR\README.md
 copy "%SOLUTION_DIR%Unity\OpenXR\Managed\Unity.XR.OpenXR.dll" "%GAME_DIR%Valheim_Data\Managed"
+copy "%SOLUTION_DIR%VHVR.OpenXR\bin\%CONFIGURATION_NAME%\VHVR.OpenXR.dll" "%GAME_DIR%Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\OpenXR\Plugins\x86_64\UnityOpenXR.dll" "%GAME_DIR%Valheim_Data\Plugins\x86_64"
 copy "%SOLUTION_DIR%Unity\OpenXR\Plugins\x86_64\openxr_loader.dll" "%GAME_DIR%Valheim_Data\Plugins\x86_64"
 if not exist "%GAME_DIR%Valheim_Data\UnitySubsystems\UnityOpenXR" mkdir "%GAME_DIR%Valheim_Data\UnitySubsystems\UnityOpenXR"
@@ -81,6 +82,7 @@ copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\UnitySubsystems\XRSDKOpenVR\Unity
 
 :: OpenXR runtime (VRRuntime = OpenXR), checked in: see Unity\OpenXR\README.md
 copy "%SOLUTION_DIR%Unity\OpenXR\Managed\Unity.XR.OpenXR.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
+copy "%SOLUTION_DIR%VHVR.OpenXR\bin\%CONFIGURATION_NAME%\VHVR.OpenXR.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\OpenXR\Plugins\x86_64\UnityOpenXR.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
 copy "%SOLUTION_DIR%Unity\OpenXR\Plugins\x86_64\openxr_loader.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\UnityOpenXR" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\UnityOpenXR"
