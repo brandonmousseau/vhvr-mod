@@ -252,8 +252,15 @@ namespace ValheimVRMod.Scripts
             sphere.transform.SetParent(transform);
             sphere.transform.localScale *= 0.02f;
             sphere.layer = LayerUtils.getWorldspaceUiLayer();
-            sphere.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-            sphere.GetComponent<MeshRenderer>().material.color = Color.red;
+            var sphereRenderer = sphere.GetComponent<MeshRenderer>();
+            sphereRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            sphereRenderer.material.color = Color.red;
+            // Draw after the wrist bar/radial menu sprites (transparent queue, no depth write) so that
+            // solid icons such as map and chat do not hide the cursor. In the transparent range Unity
+            // sorts by sorting layer/order before render queue, so the queue alone is not enough: the
+            // sortingOrder must exceed the item sprites' orders (0-3, see CreateItemLayers).
+            sphereRenderer.material.renderQueue = 3100;
+            sphereRenderer.sortingOrder = 10;
             Destroy(sphere.GetComponent<Collider>());
         }
 
