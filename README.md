@@ -1,8 +1,6 @@
 # VHVR-Mod
 This is an experimental mod for the PC game Valheim that adds in native VR support using Unity and SteamVR with OpenVR.
 
-Download the mod at [Nexus Mods](https://www.nexusmods.com/valheim/mods/847)!
-
 Check out the development log of progress on [YouTube](https://www.youtube.com/playlist?list=PL9EDvRwka57-swWbcOAq0lhIp5jSFPg-u).
 
 Join the [Flatscreen to VR Modding Discord](https://discord.gg/ZFSCSDe)

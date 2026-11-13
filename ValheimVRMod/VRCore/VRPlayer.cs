@@ -475,6 +475,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
+            VrikCreator.DestroyTargets(vrikRef);
             Destroy(vrikRef);
             vrikRef = null;
 

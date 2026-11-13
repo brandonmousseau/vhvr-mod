@@ -40,10 +40,18 @@ namespace ValheimVRMod.Scripts
             // because the player waved the rod around while clicking through a GUI), but once armed, let the
             // preparation and the eventual release proceed even if a pointer comes up mid-swing.
             if (!LaserPointerChords.IsLaserActiveFor(VRInputSource.Any) &&
-                VRInputActions.valheim_Use.GetStateDown(swingInputSource))
+                VRInputActions.valheim_Use.GetStateDown(swingInputSource) &&
+                !SuppressSwingLaunch())
             {
                 preparingThrow = true;
                 peakSpeed = 0;
+            }
+
+            if (SuppressSwingLaunch())
+            {
+                // The trigger is in use for something else (e.g. reeling in a cast fishing float), so the
+                // swing made while holding it, and its release, must not count as a launch.
+                preparingThrow = false;
             }
 
             spawnPoint = GetProjectileSpawnPoint();
@@ -117,6 +125,12 @@ namespace ValheimVRMod.Scripts
         protected virtual bool ReleaseTriggerToAttack()
         {
             return true;
+        }
+
+        // Whether trigger presses currently serve another purpose and must not arm or complete a swing-launch.
+        protected virtual bool SuppressSwingLaunch()
+        {
+            return false;
         }
     }
 }
