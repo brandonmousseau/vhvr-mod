@@ -25,7 +25,10 @@ namespace ValheimVRMod.Scripts
         protected Texture2D tex_hovered;
         protected Texture2D tex_selected;
 
+        private const float HOVERED_WRIST_ICON_ALPHA = 0.6f;
+
         protected GameObject hoveredItem;
+        private SpriteRenderer seeThroughWristIcon;
         private int elementCount;
         private int extraElementCount;
         protected int hoveredIndex = -1;
@@ -227,6 +230,46 @@ namespace ValheimVRMod.Scripts
                 sphere.transform.position = handTransform.position;
             }
             hoverItem();
+            updateSeeThroughWristIcon();
+        }
+
+        private void OnDisable()
+        {
+            setIconAlpha(seeThroughWristIcon, 1f);
+            seeThroughWristIcon = null;
+        }
+
+        // Some wrist bar icons (the map, chat) are solid squares that fill the whole tile, so they hide the cursor
+        // sphere and the hover highlight behind them. While a wrist bar button is hovered, its icon is drawn
+        // see-through, so the cursor and the highlight show through it like they do around the radial menu's icons.
+        private void updateSeeThroughWristIcon()
+        {
+            SpriteRenderer icon = null;
+            int wristIndex = hoveredIndex - elementCount;
+            if (hoveredItem.activeSelf && wristIndex >= 0 && wristIndex < extraElementCount)
+            {
+                icon = extraElements[wristIndex].transform.GetChild(2).GetComponent<SpriteRenderer>();
+            }
+
+            if (icon == seeThroughWristIcon)
+            {
+                return;
+            }
+
+            setIconAlpha(seeThroughWristIcon, 1f);
+            setIconAlpha(icon, HOVERED_WRIST_ICON_ALPHA);
+            seeThroughWristIcon = icon;
+        }
+
+        private static void setIconAlpha(SpriteRenderer icon, float alpha)
+        {
+            if (!icon)
+            {
+                return;
+            }
+            var color = icon.color;
+            color.a = alpha;
+            icon.color = color;
         }
 
         private void OnDestroy()
