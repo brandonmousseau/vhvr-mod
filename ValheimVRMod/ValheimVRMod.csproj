@@ -126,6 +126,12 @@
       <HintPath>..\Unity\OpenXR\Managed\Unity.XR.OpenXR.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <!-- VHVR's own OpenXR actions (VHVR.OpenXR\VhvrActionsFeature.cs), built before the mod by BuildVHVROpenXR. Only used
+         by the OpenXR backend (VRCore\Backends\OpenXRLoaderSetup.cs). Referenced by its path: by name, the copy a previous
+         build left in release\ (an item of this project) would be found first. -->
+    <Reference Include="$(MSBuildThisFileDirectory)..\VHVR.OpenXR\bin\$(Configuration)\VHVR.OpenXR.dll">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.SpatialTracking">
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\UnityEngine.SpatialTracking.dll</HintPath>
     </Reference>
@@ -151,6 +157,11 @@
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\Valve.Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <Target Name="BuildVHVROpenXR" BeforeTargets="ResolveAssemblyReferences">
+    <!-- Restored on its own (a fresh evaluation), as an SDK project must be before it is built. -->
+    <MSBuild Projects="..\VHVR.OpenXR\VHVR.OpenXR.csproj" Targets="Restore" Properties="Configuration=$(Configuration);CommonDir=$(CommonDir);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+    <MSBuild Projects="..\VHVR.OpenXR\VHVR.OpenXR.csproj" Targets="Build" Properties="Configuration=$(Configuration);CommonDir=$(CommonDir)" />
+  </Target>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SkipReleasePackaging)' != 'true'">
     <Exec Command="make-release.cmd" EnvironmentVariables="
 	    SOLUTION_DIR=$(SolutionDir);
