@@ -217,7 +217,13 @@ namespace ValheimVRMod.Scripts
             return false;
         }
 
-       
+        protected override bool SuppressSwingLaunch()
+        {
+            // While the float is out, the trigger reels the line in; moving the rod while holding it
+            // must not recast the bait.
+            return isFishing;
+        }
+
         private void UpdateReel()
         {
             var offHandCenter = VRPlayer.mainWeaponHand.otherHand.transform.TransformPoint(handCenter);
