@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 3043454848
+CRC: 657013185
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: e15321403a1532f969a004eda5d7c202
+    Hash: 6fd45067dc20f225268dea8beff9b488
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1fe3abd029edb3522ae5dbbc711d0a74
@@ -47,6 +47,7 @@ Assets:
 - Assets/CustomResources/Materials/Slash.mat
 - Assets/CustomResources/Materials/StandardFade.mat
 - Assets/CustomResources/Materials/vr_panel_unlit.mat
+- Assets/CustomResources/Textures/chat.png
 - Assets/CustomResources/GizmoRing.prefab
 - Assets/CustomResources/Materials/VHVRVignette.shader
 - Assets/CustomResources/Textures/map.png
