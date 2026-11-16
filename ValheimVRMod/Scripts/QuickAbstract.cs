@@ -55,7 +55,7 @@ namespace ValheimVRMod.Scripts
             sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");
             mapTexture = VRAssetManager.GetAsset<Texture2D>("map");
             recenterTexture = VRAssetManager.GetAsset<Texture2D>("recenter");
-            chatTexture = VRAssetManager.GetAsset<Texture2D>("black_screen");
+            chatTexture = VRAssetManager.GetAsset<Texture2D>("chat");
             elements = new QuickMenuItem[MAX_ELEMENTS];
             extraElements = new QuickMenuItem[MAX_EXTRA_ELEMENTS];
             wrist = new GameObject();
