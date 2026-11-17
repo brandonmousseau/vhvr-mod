@@ -7,13 +7,16 @@ using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.VRCore.Backends
 {
-    // The mod's actions (VRInputActions) under OpenXR. The controllers are read through the legacy XR input
-    // (OpenXRController); the actions are worked out from them once per frame, through one generic set of bindings
-    // (OpenXRBindings), with the same down and up edges, listeners and action sets as SteamVR's. There are no
-    // per-controller bindings, no binding UI and no haptics yet.
+    // The mod's actions (VRInputActions) under OpenXR, worked out once per frame with the same down and up edges,
+    // listeners and action sets as SteamVR's. Per action and hand, in this order:
+    // - VHVR's own OpenXR actions (BuildManifest(), registered with the runtime by VHVR.OpenXR's VhvrActionsFeature):
+    //   the runtime reads them through the bindings suggested for the controller's interaction profile, or the
+    //   player's own from the runtime's binding UI (SteamVR's). Whatever the runtime has bound wins.
+    // - Otherwise the profile's compat bindings (OpenXRProfiles): the chords and dpad directions OpenXR cannot express.
+    // - Should the runtime not have taken VHVR's actions at all, the generic legacy bindings (OpenXRBindings).
+    // The poses come from the controllers' legacy XR devices (OpenXRController). There is no haptics yet.
     // Inert until Start(), when the runtime is up: every action is unbound and released, and nothing here touches
     // Unity, so the backend can be made and its actions resolved outside the game.
-    // TODO: use proper OpenXR controller binding instead of legacy XR input.
     public sealed class OpenXRInputBackend : IVRInputBackend
     {
         private const string DefaultSet = "/actions/default";
@@ -30,11 +33,109 @@ namespace ValheimVRMod.VRCore.Backends
         private int dispatchedFrame = -1;
         private bool loggedBindingUI;
 
+        private IReadOnlyList<VRActionSetDecl> declaredSets = new VRActionSetDecl[0];
+        private IReadOnlyList<VRActionDecl> declaredActions = new VRActionDecl[0];
+        // The OpenXR action of each mod action path, and the mod set path of each OpenXR set, by index.
+        private readonly Dictionary<string, int> runtimeActions = new Dictionary<string, int>();
+        private readonly List<string> runtimeSets = new List<string>();
+        private string loggedProfiles;
+        private int? loggedRuntimeSignature;
+        private bool loggedLegacyFallback;
+
         public event Action onNonVisualActionsUpdated;
 
+        public OpenXRInputBackend()
+        {
+            left.ActionHeld = action => booleans.TryGetValue(action, out BooleanAction a) && a.PressedOn(XRHand.Left);
+            right.ActionHeld = action => booleans.TryGetValue(action, out BooleanAction a) && a.PressedOn(XRHand.Right);
+            left.ActionAxis = action => axes.TryGetValue(action, out AxisAction a) ? a.ValueOn(XRHand.Left) : Vector2.zero;
+            right.ActionAxis = action => axes.TryGetValue(action, out AxisAction a) ? a.ValueOn(XRHand.Right) : Vector2.zero;
+        }
+
+        // Kept for BuildManifest(): VHVR's OpenXR actions are created with the runtime's instance, before the mod's
+        // actions are resolved.
         public void Declare(IReadOnlyList<VRActionSetDecl> sets, IReadOnlyList<VRActionDecl> actions)
         {
-            // Nothing to create with the runtime: the plugin's profiles hold the OpenXR actions.
+            declaredSets = sets;
+            declaredActions = actions;
+        }
+
+        // VHVR's OpenXR action sets and actions, one per declared set and per declared boolean or vector2 action, and
+        // the bindings each profile suggests for them. Poses come from the controllers' devices, and there is no
+        // haptics yet.
+        internal OpenXRActionManifest BuildManifest()
+        {
+            var manifest = new OpenXRActionManifest();
+            runtimeActions.Clear();
+            runtimeSets.Clear();
+            var setNames = new HashSet<string>();
+            foreach (VRActionSetDecl set in declaredSets)
+            {
+                runtimeSets.Add(set.Path);
+                manifest.Sets.Add(new OpenXRActionManifest.Set
+                {
+                    Name = unique(setNames, "vhvr_" + pathComponent(ShortName(set.Path))),
+                    LocalizedName = "VHVR " + set.LocalizedName,
+                });
+            }
+            var actionNames = new HashSet<string>();
+            foreach (VRActionDecl action in declaredActions)
+            {
+                int set = runtimeSets.IndexOf(action.SetPath);
+                if ((action.Kind != VRActionKind.Boolean && action.Kind != VRActionKind.Vector2) || set < 0)
+                {
+                    continue;
+                }
+                runtimeActions[action.Path] = manifest.Actions.Count;
+                manifest.Actions.Add(new OpenXRActionManifest.Action
+                {
+                    Set = set,
+                    // Unique per set is enough for OpenXR; per instance keeps the runtime's UI unambiguous.
+                    Name = unique(actionNames, pathComponent(ShortName(action.Path))),
+                    LocalizedName = action.LocalizedName,
+                    IsVector2 = action.Kind == VRActionKind.Vector2,
+                });
+            }
+            foreach (OpenXRProfile profile in OpenXRProfiles.All)
+            {
+                foreach (XRSuggestedBinding binding in profile.Suggested)
+                {
+                    if (runtimeActions.TryGetValue(binding.Action, out int index))
+                    {
+                        manifest.Bindings.Add(new OpenXRActionManifest.Binding
+                        {
+                            Profile = profile.InteractionProfile,
+                            Action = index,
+                            Path = binding.Path,
+                        });
+                    }
+                }
+            }
+            return manifest;
+        }
+
+        // An OpenXR path component: lower case letters, digits, '-', '_' and '.'.
+        private static string pathComponent(string name)
+        {
+            var result = new System.Text.StringBuilder();
+            foreach (char c in name.ToLowerInvariant())
+            {
+                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.')
+                {
+                    result.Append(c);
+                }
+            }
+            return result.Length == 0 ? "action" : result.ToString();
+        }
+
+        private static string unique(HashSet<string> taken, string name)
+        {
+            string candidate = name;
+            for (int i = 2; !taken.Add(candidate); i++)
+            {
+                candidate = name + "_" + i;
+            }
+            return candidate;
         }
 
         public VRBooleanAction Boolean(string path)
@@ -77,7 +178,8 @@ namespace ValheimVRMod.VRCore.Backends
             if (!loggedBindingUI)
             {
                 loggedBindingUI = true;
-                LogWarning("There is no binding UI under OpenXR: the default bindings of the controller are used.");
+                LogWarning("VHVR cannot open the binding UI under OpenXR. Its actions can be rebound in the OpenXR " +
+                           "runtime's own binding UI, if it has one (SteamVR: Settings > Controllers > Manage Controller Bindings).");
             }
         }
 
@@ -167,6 +269,116 @@ namespace ValheimVRMod.VRCore.Backends
             {
                 action.BeginFrame();
             }
+            if (OpenXRLoaderSetup.ActionsAttached())
+            {
+                readRuntimeActions();
+                OpenXRProfile leftProfile = profileOf(XRHand.Left);
+                OpenXRProfile rightProfile = profileOf(XRHand.Right);
+                string profiles = (leftProfile?.Name ?? "none") + " / " + (rightProfile?.Name ?? "none");
+                if (profiles != loggedProfiles)
+                {
+                    loggedProfiles = profiles;
+                    LogInfo("OpenXR interaction profiles (left / right): " + profiles + ".");
+                }
+                // The dpad directions first, the chords last: a chord may be made of an action a dpad gives.
+                bindCompat(leftProfile, XRHand.Left, XRCompatKind.Dpad);
+                bindCompat(rightProfile, XRHand.Right, XRCompatKind.Dpad);
+                bindCompat(leftProfile, XRHand.Left, XRCompatKind.Chord);
+                bindCompat(rightProfile, XRHand.Right, XRCompatKind.Chord);
+            }
+            else
+            {
+                bindLegacy();
+            }
+            foreach (BooleanAction action in booleans.Values)
+            {
+                action.EndFrame();
+            }
+            foreach (AxisAction action in axes.Values)
+            {
+                action.EndFrame();
+            }
+        }
+
+        private OpenXRController Controller(XRHand hand) => hand == XRHand.Left ? left : right;
+
+        private static readonly XRHand[] Hands = { XRHand.Left, XRHand.Right };
+
+        // VHVR's OpenXR actions, as the runtime binds them: the sets the mod has active are synced, and each action of
+        // an active set takes the runtime's state on every hand the runtime has it bound on.
+        private void readRuntimeActions()
+        {
+            for (int i = 0; i < runtimeSets.Count; i++)
+            {
+                OpenXRLoaderSetup.SetActionSetActive(i, ActionSetFor(runtimeSets[i]).active);
+            }
+            foreach (BooleanAction action in booleans.Values)
+            {
+                if (!action.Set.active || !runtimeActions.TryGetValue(action.Path, out int index))
+                {
+                    continue;
+                }
+                foreach (XRHand hand in Hands)
+                {
+                    if (OpenXRLoaderSetup.ReadBoolean(index, (int)hand, out bool state))
+                    {
+                        action.BindFromRuntime(hand, state);
+                    }
+                }
+            }
+            foreach (AxisAction action in axes.Values)
+            {
+                if (!action.Set.active || !runtimeActions.TryGetValue(action.Path, out int index))
+                {
+                    continue;
+                }
+                foreach (XRHand hand in Hands)
+                {
+                    if (OpenXRLoaderSetup.ReadVector2(index, (int)hand, out Vector2 axis))
+                    {
+                        action.BindFromRuntime(hand, axis);
+                    }
+                }
+            }
+            logRuntimeBindings();
+        }
+
+        // The profile the runtime uses for the hand, else the one of the hand's device.
+        private OpenXRProfile profileOf(XRHand hand)
+        {
+            OpenXRController controller = Controller(hand);
+            if (!controller.IsConnected)
+            {
+                return null;
+            }
+            return OpenXRProfiles.Find(OpenXRLoaderSetup.CurrentInteractionProfile((int)hand), controller.Name);
+        }
+
+        // The hand's compat bindings of one kind, for the actions the runtime has unbound on that hand.
+        private void bindCompat(OpenXRProfile profile, XRHand hand, XRCompatKind kind)
+        {
+            if (profile == null)
+            {
+                return;
+            }
+            foreach (XRCompatBinding binding in profile.Compat)
+            {
+                if (binding.Kind == kind && binding.Source == hand &&
+                    booleans.TryGetValue(binding.Action, out BooleanAction action) && action.Set.active && !action.FromRuntime(hand))
+                {
+                    action.Bind(hand, binding.Condition(left, right));
+                }
+            }
+        }
+
+        // Without VHVR's OpenXR actions: the generic bindings on the legacy XR devices.
+        private void bindLegacy()
+        {
+            if (!loggedLegacyFallback)
+            {
+                loggedLegacyFallback = true;
+                LogWarning("VHVR's OpenXR actions are not attached; using the generic legacy XR bindings, which cannot be rebound.");
+            }
             foreach (XRBooleanBinding binding in OpenXRBindings.Booleans)
             {
                 if (booleans.TryGetValue(binding.Action, out BooleanAction action) && action.Set.active)
@@ -181,17 +393,45 @@ namespace ValheimVRMod.VRCore.Backends
                     action.Bind(binding.Source, Controller(binding.Source).IsConnected ? binding.Read(left, right) : Vector2.zero);
                 }
             }
-            foreach (BooleanAction action in booleans.Values)
-            {
-                action.EndFrame();
-            }
-            foreach (AxisAction action in axes.Values)
-            {
-                action.EndFrame();
-            }
         }
 
-        private OpenXRController Controller(XRHand hand) => hand == XRHand.Left ? left : right;
+        // Which actions the runtime has bound on each hand, logged when that changes; the others follow the compat
+        // bindings, if any.
+        private void logRuntimeBindings()
+        {
+            // Checked every frame without allocating; the names are only listed when it changed.
+            int signature = 17;
+            foreach (XRHand hand in Hands)
+            {
+                foreach (BooleanAction action in booleans.Values)
+                {
+                    signature = signature * 31 + (action.FromRuntime(hand) ? 1 : 0);
+                }
+                foreach (AxisAction action in axes.Values)
+                {
+                    signature = signature * 31 + (action.FromRuntime(hand) ? 1 : 0);
+                }
+            }
+            if (loggedRuntimeSignature == signature)
+            {
+                return;
+            }
+            loggedRuntimeSignature = signature;
+            foreach (XRHand hand in Hands)
+            {
+                var names = new List<string>();
+                foreach (BooleanAction action in booleans.Values)
+                {
+                    if (action.FromRuntime(hand)) names.Add(ShortName(action.Path));
+                }
+                foreach (AxisAction action in axes.Values)
+                {
+                    if (action.FromRuntime(hand)) names.Add(ShortName(action.Path));
+                }
+                LogInfo("OpenXR actions bound by the runtime on the " + hand + " hand: " +
+                        (names.Count == 0 ? "none" : string.Join(", ", names.ToArray())) + ".");
+            }
+        }
 
         // Every XR input device and the hands' features, for when a hand is not found or not the expected controller.
         private void logXRDevices()
@@ -327,12 +567,16 @@ namespace ValheimVRMod.VRCore.Backends
             private readonly bool[] pressed = new bool[3];
             private readonly bool[] previous = new bool[3];
             private readonly bool[] bound = new bool[3];
+            // Per hand (left, right): the runtime gave the state this frame.
+            private readonly bool[] runtime = new bool[2];
             private readonly List<KeyValuePair<int, Action<VRBooleanAction, VRInputSource>>> downListeners =
                 new List<KeyValuePair<int, Action<VRBooleanAction, VRInputSource>>>();
             private readonly List<KeyValuePair<int, Action<VRBooleanAction, VRInputSource>>> upListeners =
                 new List<KeyValuePair<int, Action<VRBooleanAction, VRInputSource>>>();
 
             public BooleanAction(OpenXRInputBackend backend, string path, XRActionSet set) { this.backend = backend; this.path = path; Set = set; }
+
+            internal string Path => path;
 
             internal void BeginFrame()
             {
@@ -341,6 +585,15 @@ namespace ValheimVRMod.VRCore.Backends
                     previous[i] = pressed[i];
                     pressed[i] = bound[i] = false;
                 }
+                runtime[0] = runtime[1] = false;
+            }
+            internal bool FromRuntime(XRHand hand) => runtime[(int)hand];
+            // Pressed on the hand so far this frame, while the bindings are being worked out.
+            internal bool PressedOn(XRHand hand) => pressed[hand == XRHand.Left ? 1 : 2];
+            internal void BindFromRuntime(XRHand hand, bool value)
+            {
+                runtime[(int)hand] = true;
+                Bind(hand, value);
             }
             internal void Bind(XRHand hand, bool value)
             {
@@ -398,10 +651,13 @@ namespace ValheimVRMod.VRCore.Backends
             private readonly Vector2[] value = new Vector2[3];
             private readonly Vector2[] previous = new Vector2[3];
             private readonly bool[] bound = new bool[3];
+            private readonly bool[] runtime = new bool[2];
             private readonly List<KeyValuePair<int, Action<VRVector2Action, VRInputSource, Vector2, Vector2>>> listeners =
                 new List<KeyValuePair<int, Action<VRVector2Action, VRInputSource, Vector2, Vector2>>>();
 
             public AxisAction(OpenXRInputBackend backend, string path, XRActionSet set) { this.backend = backend; this.path = path; Set = set; }
+
+            internal string Path => path;
 
             internal void BeginFrame()
             {
@@ -411,6 +667,15 @@ namespace ValheimVRMod.VRCore.Backends
                     value[i] = Vector2.zero;
                     bound[i] = false;
                 }
+                runtime[0] = runtime[1] = false;
+            }
+            internal bool FromRuntime(XRHand hand) => runtime[(int)hand];
+            // The hand's value so far this frame, while the bindings are being worked out.
+            internal Vector2 ValueOn(XRHand hand) => value[hand == XRHand.Left ? 1 : 2];
+            internal void BindFromRuntime(XRHand hand, Vector2 axis)
+            {
+                runtime[(int)hand] = true;
+                Bind(hand, axis);
             }
             internal void Bind(XRHand hand, Vector2 axis)
             {
@@ -533,5 +798,35 @@ namespace ValheimVRMod.VRCore.Backends
     {
         internal OpenXRInputBackend Backend;
         private void Update() => Backend?.Tick();
+    }
+
+    // VHVR's OpenXR action sets, actions and suggested bindings, in plain types (OpenXRLoaderSetup hands them to the
+    // VHVR.OpenXR feature that registers them with the runtime).
+    sealed class OpenXRActionManifest
+    {
+        public sealed class Set
+        {
+            public string Name;
+            public string LocalizedName;
+        }
+
+        public sealed class Action
+        {
+            public int Set;
+            public string Name;
+            public string LocalizedName;
+            public bool IsVector2;
+        }
+
+        public sealed class Binding
+        {
+            public string Profile;
+            public int Action;
+            public string Path;
+        }
+
+        public readonly List<Set> Sets = new List<Set>();
+        public readonly List<Action> Actions = new List<Action>();
+        public readonly List<Binding> Bindings = new List<Binding>();
     }
 }

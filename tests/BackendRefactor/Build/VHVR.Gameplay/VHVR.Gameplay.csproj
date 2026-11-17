@@ -17,6 +17,8 @@
     <Reference Include="$(ValheimDir)/Valheim_Data/Managed/Unity*.dll" Exclude="$(ValheimDir)/Valheim_Data/Managed/Unity.XR.OpenXR.dll" Private="false" />
     <!-- Checked in (see Unity/OpenXR/README.md); the game has it only once the mod is installed. -->
     <Reference Include="$(VHVRSourceRoot)/Unity/OpenXR/Managed/Unity.XR.OpenXR.dll" Private="false" />
+    <!-- VHVR's OpenXR actions, built first (BuildVHVROpenXR); not copied, as the game has it only once the mod is installed. -->
+    <Reference Include="$(VHVRSourceRoot)/VHVR.OpenXR/bin/Release/VHVR.OpenXR.dll" Private="false" />
     <Reference Update="$(ValheimDir)/Valheim_Data/Managed/UnityEngine.CoreModule.dll" Publicize="true" />
     <Reference Include="$(ValheimDir)/Valheim_Data/Managed/netstandard.dll" Private="false" />
     <Reference Include="$(ValheimDir)/Valheim_Data/Managed/mscorlib.dll" Private="false" />
@@ -38,4 +40,8 @@
     <Reference Include="$(ValheimDir)/BepInEx/core/0Harmony.dll" Private="false" />
     <ProjectReference Include="../SteamVR.Runtime/SteamVR.Runtime.csproj" />
   </ItemGroup>
+  <Target Name="BuildVHVROpenXR" BeforeTargets="ResolveAssemblyReferences">
+    <MSBuild Projects="$(VHVRSourceRoot)/VHVR.OpenXR/VHVR.OpenXR.csproj" Targets="Restore" Properties="Configuration=Release;ValheimManagedDir=$(ValheimDir)/Valheim_Data/Managed/;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+    <MSBuild Projects="$(VHVRSourceRoot)/VHVR.OpenXR/VHVR.OpenXR.csproj" Targets="Build" Properties="Configuration=Release;ValheimManagedDir=$(ValheimDir)/Valheim_Data/Managed/" />
+  </Target>
 </Project>

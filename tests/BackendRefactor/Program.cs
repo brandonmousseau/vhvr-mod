@@ -43,6 +43,7 @@ static class Program
         CheckBuiltArrays();
         CheckManifest();
         CheckCatalog();
+        CheckOpenXRActions();
         CheckCallbacks();
         CheckBoundary();
         CheckHapticIdentity();
@@ -149,6 +150,142 @@ static class Program
         Array.Clear(states);
         states[(int)source] = enabled;
     }
+
+    // The OpenXR input paths of each interaction profile VHVR suggests bindings for, as the OpenXR 1.0 specification
+    // lists them (poses and haptics left out). Per hand where the hands differ.
+    static readonly Dictionary<string, (string[] both, string[] left, string[] right)> OpenXRInputs = new()
+    {
+        ["/interaction_profiles/oculus/touch_controller"] = (
+            new[] { "squeeze/value", "trigger/value", "trigger/touch", "thumbstick", "thumbstick/x", "thumbstick/y", "thumbstick/click", "thumbstick/touch", "thumbrest/touch" },
+            new[] { "x/click", "x/touch", "y/click", "y/touch", "menu/click" },
+            new[] { "a/click", "a/touch", "b/click", "b/touch", "system/click" }),
+        ["/interaction_profiles/valve/index_controller"] = (
+            new[] { "system/click", "system/touch", "a/click", "a/touch", "b/click", "b/touch", "squeeze/value", "squeeze/force",
+                    "trigger/click", "trigger/value", "trigger/touch", "thumbstick", "thumbstick/x", "thumbstick/y", "thumbstick/click",
+                    "thumbstick/touch", "trackpad", "trackpad/x", "trackpad/y", "trackpad/force", "trackpad/touch" },
+            new string[0], new string[0]),
+        ["/interaction_profiles/htc/vive_controller"] = (
+            new[] { "system/click", "squeeze/click", "menu/click", "trigger/click", "trigger/value", "trackpad", "trackpad/x", "trackpad/y",
+                    "trackpad/click", "trackpad/touch" },
+            new string[0], new string[0]),
+        ["/interaction_profiles/microsoft/motion_controller"] = (
+            new[] { "menu/click", "squeeze/click", "trigger/value", "thumbstick", "thumbstick/x", "thumbstick/y", "thumbstick/click",
+                    "trackpad", "trackpad/x", "trackpad/y", "trackpad/click", "trackpad/touch" },
+            new string[0], new string[0]),
+        ["/interaction_profiles/khr/simple_controller"] = (new[] { "select/click", "menu/click" }, new string[0], new string[0]),
+    };
+
+    // VHVR's OpenXR actions and bindings, offline: the manifest registered with the runtime, the suggested paths of
+    // each profile, and each profile against the SteamVR bindings file it is written after.
+    static void CheckOpenXRActions()
+    {
+        var mod = typeof(VRBackend).Assembly;
+        object Get(object target, string name) =>
+            target.GetType().GetField(name, BindingFlags.Public | BindingFlags.Instance)!.GetValue(target)!;
+
+        // The manifest: one OpenXR set per catalog set, one action per boolean and vector2 action, with valid unique
+        // names, and bindings to existing actions.
+        var backend = new OpenXRInputBackend();
+        backend.Declare(VRInputActions.Sets, VRInputActions.Actions);
+        object manifest = typeof(OpenXRInputBackend).GetMethod("BuildManifest", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(backend, null)!;
+        var sets = ((System.Collections.IEnumerable)Get(manifest, "Sets")).Cast<object>().ToList();
+        var actions = ((System.Collections.IEnumerable)Get(manifest, "Actions")).Cast<object>().ToList();
+        var bindings = ((System.Collections.IEnumerable)Get(manifest, "Bindings")).Cast<object>().ToList();
+        var component = new System.Text.RegularExpressions.Regex("^[a-z0-9_.-]{1,63}$");
+        Require(sets.Count == VRInputActions.Sets.Count, "an OpenXR set per catalog set");
+        Require(sets.All(set => component.IsMatch((string)Get(set, "Name"))) &&
+                sets.Select(set => (string)Get(set, "Name")).Distinct().Count() == sets.Count, "valid unique OpenXR set names");
+        int readable = VRInputActions.Actions.Count(a => a.Kind == VRActionKind.Boolean || a.Kind == VRActionKind.Vector2);
+        Require(actions.Count == readable, "an OpenXR action per boolean and vector2 catalog action");
+        Require(actions.All(a => component.IsMatch((string)Get(a, "Name")) && ((string)Get(a, "LocalizedName")).Length < 128) &&
+                actions.Select(a => (string)Get(a, "Name")).Distinct().Count() == actions.Count, "valid unique OpenXR action names");
+        Require(bindings.All(b => (int)Get(b, "Action") >= 0 && (int)Get(b, "Action") < actions.Count), "bindings of existing actions");
+        Require(bindings.Select(b => Get(b, "Profile") + " " + Get(b, "Action") + " " + Get(b, "Path")).Distinct().Count() == bindings.Count,
+                "no binding suggested twice");
+
+        // The tables: every suggested path is an input of its profile, of the action's type; no compat binding stands
+        // for an action the profile suggests on the same hand.
+        var rows = ((List<string[]>)mod.GetType("ValheimVRMod.VRCore.Backends.OpenXRProfiles", true)!
+            .GetMethod("Rows", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, null)!);
+        var kinds = VRInputActions.Actions.ToDictionary(a => a.Path, a => a.Kind);
+        foreach (var row in rows)
+        {
+            string profile = row[0], kind = row[2], action = row[3], hand = row[4], path = row[5];
+            Require(kinds.ContainsKey(action), "bound action is in the catalog: " + action);
+            if (kind == "suggest")
+            {
+                Require(OpenXRInputs.ContainsKey(profile), "known profile " + profile);
+                var inputs = OpenXRInputs[profile];
+                string prefix = hand == "Left" ? "/user/hand/left/input/" : "/user/hand/right/input/";
+                Require(path.StartsWith(prefix), "suggested on its hand: " + path);
+                string input = path.Substring(prefix.Length);
+                Require(inputs.both.Contains(input) || (hand == "Left" ? inputs.left : inputs.right).Contains(input),
+                        "valid input " + path + " for " + profile);
+                bool vector2 = input == "thumbstick" || input == "trackpad";
+                Require(vector2 == (kinds[action] == VRActionKind.Vector2), "input type matches the action: " + action + " " + path);
+            }
+            else
+            {
+                Require(kinds[action] == VRActionKind.Boolean, "compat binding of a boolean: " + action);
+                Require(!rows.Any(r => r[0] == profile && r[2] == "suggest" && r[3] == action && r[4] == hand),
+                        "compat only where the profile suggests nothing: " + action + " " + hand + " " + profile);
+            }
+        }
+
+        // Every action the SteamVR bindings file binds on a hand is suggested or compat on that hand in the profile
+        // written after it; the compat bindings are only chords and dpad directions. Scroll mode has no counterpart,
+        // and the actions the catalog lacks (SnapTurn...) or the backend does not read (poses, skeletons, squeeze) are
+        // left out.
+        string? directory = null;
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir != null && directory == null; dir = dir.Parent)
+        {
+            var candidate = Path.Combine(dir.FullName, "Unity/ValheimVR/Assets/StreamingAssets/SteamVR");
+            if (File.Exists(Path.Combine(candidate, "actions.json"))) directory = candidate;
+        }
+        Require(directory != null, "SteamVR bindings found");
+        var paths = kinds.Where(k => k.Value == VRActionKind.Boolean || k.Value == VRActionKind.Vector2)
+            .ToDictionary(k => k.Key.ToLowerInvariant(), k => k.Key);
+        int compared = 0;
+        foreach (var controller in rows.Select(r => r[1]).Where(c => c != "").Distinct())
+        {
+            string profile = rows.First(r => r[1] == controller)[0];
+            using var json = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(directory!, "bindings_" + controller + ".json")));
+            var expected = new List<(string action, string hand, string how)>();
+            foreach (var set in json.RootElement.GetProperty("bindings").EnumerateObject())
+            {
+                if (set.Value.TryGetProperty("sources", out var sources))
+                foreach (var source in sources.EnumerateArray())
+                {
+                    string mode = source.GetProperty("mode").GetString()!;
+                    string hand = source.GetProperty("path").GetString()!.StartsWith("/user/hand/left") ? "Left" : "Right";
+                    if (mode == "scroll" || !source.TryGetProperty("inputs", out var inputs)) continue;
+                    foreach (var input in inputs.EnumerateObject())
+                    {
+                        expected.Add((input.Value.GetProperty("output").GetString()!, hand, mode == "dpad" ? "dpad" : "plain"));
+                    }
+                }
+                if (set.Value.TryGetProperty("chords", out var chords))
+                foreach (var chord in chords.EnumerateArray())
+                {
+                    var parts = chord.GetProperty("inputs").EnumerateArray().ToList();
+                    if (parts.Count == 0) continue;
+                    string hand = parts[^1][0].GetString()!.StartsWith("/user/hand/left") ? "Left" : "Right";
+                    expected.Add((chord.GetProperty("output").GetString()!, hand, "chord"));
+                }
+            }
+            foreach (var (output, hand, how) in expected)
+            {
+                if (!paths.TryGetValue(output.ToLowerInvariant(), out var action)) continue;
+                bool suggested = rows.Any(r => r[0] == profile && r[2] == "suggest" && r[3] == action && r[4] == hand);
+                bool compat = rows.Any(r => r[0] == profile && r[2] != "suggest" && r[3] == action && r[4] == hand);
+                Require(suggested || compat, "bindings_" + controller + ".json's " + action + " (" + how + ", " + hand + ") is in " + profile);
+                Require(suggested || how != "plain", "a plain SteamVR binding is suggested, not compat: " + action + " " + hand + " " + profile);
+                compared++;
+            }
+        }
+        Console.WriteLine($"OpenXR: {actions.Count} actions in {sets.Count} sets, {bindings.Count} suggested bindings; {compared} SteamVR bindings compared.");
+    }
+
     static void CheckCatalog()
     {
         int booleans = 0, axes = 0, poses = 0, sets = 0, haptics = 0;
@@ -301,7 +438,9 @@ static class Program
                 if (type.IsGenericType && type.GetGenericArguments().Any(IsOpenXR)) return true;
                 type = type.HasElementType ? type.GetElementType() : type.GetGenericTypeDefinition();
             }
-            return type?.Assembly.GetName().Name == "Unity.XR.OpenXR";
+            // VHVR.OpenXR's feature derives from the plugin's: naming it loads the plugin as well.
+            string? name = type?.Assembly.GetName().Name;
+            return name == "Unity.XR.OpenXR" || name == "VHVR.OpenXR";
         }
         const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
         foreach (var type in mod.GetTypes())
@@ -319,7 +458,7 @@ static class Program
                     foreach (var parameter in method.GetParameters()) Require(!IsOpenXR(parameter.ParameterType), "no OpenXR parameter: " + type.FullName + "." + method.Name);
                 }
             }
-            catch (FileNotFoundException e) when (e.FileName?.StartsWith("Unity.XR.OpenXR") == true)
+            catch (FileNotFoundException e) when (e.FileName?.StartsWith("Unity.XR.OpenXR") == true || e.FileName?.StartsWith("VHVR.OpenXR") == true)
             {
                 Require(false, "no OpenXR type in the members of " + type.FullName);
             }

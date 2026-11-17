@@ -7,10 +7,10 @@ namespace ValheimVRMod.VRCore.Backends
     enum XRHand { Left = 0, Right = 1 }
 
     // One hand's controller, read through the legacy XR input (UnityEngine.XR, the API the head's TrackedPoseDriver
-    // reads), which the OpenXR plugin fills from the interaction profile in use (OpenXRLoaderSetup enables them).
-    // Controls are read by feature usage name (CommonUsages: "TriggerButton", "Primary2DAxis"...), which is the same
-    // whatever the profile; one the controller lacks reads as released or zero.
-    // TODO: use proper OpenXR controller binding instead of legacy XR input.
+    // reads), which the OpenXR plugin fills from the interaction profile in use (OpenXRLoaderSetup enables them): its
+    // pose, and the few controls the compat bindings read directly (OpenXRProfiles); the actions themselves are VHVR's
+    // own OpenXR actions. Controls are read by feature usage name (CommonUsages: "TriggerButton", "Primary2DAxis"...);
+    // one the controller lacks reads as released or zero.
     sealed class OpenXRController
     {
         private readonly List<InputFeatureUsage> features = new List<InputFeatureUsage>();
@@ -18,6 +18,11 @@ namespace ValheimVRMod.VRCore.Backends
 
         public bool IsConnected => device.isValid;
         public string Name => device.isValid ? device.name : null;
+
+        // The mod's own actions on this hand as worked out so far this frame (set by OpenXRInputBackend), for the
+        // compat bindings that are made of them (see OpenXRProfiles).
+        internal System.Func<string, bool> ActionHeld = action => false;
+        internal System.Func<string, Vector2> ActionAxis = action => UnityEngine.Vector2.zero;
 
         // Where the SteamVR raw pose of the controller (what the hands of the rig follow, and what the mod's held
         // item offsets and laser pointer are made for) is from the OpenXR grip pose.
@@ -139,11 +144,11 @@ namespace ValheimVRMod.VRCore.Backends
         public XRAxisReader Read;
     }
 
-    // One generic set of bindings for every controller, on the legacy XR usages: the mod's Touch bindings
-    // (StreamingAssets/SteamVR/bindings_oculus_touch.json), chords and stick directions included, which suit any
-    // controller with a stick, two face buttons, a trigger and a grip. Per-controller bindings and rebinding are left
-    // for later. SteamVR reports the buttons that make up a chord as well as the chord, and so does this
-    // (LaserPointerChords counts on it).
+    // The last resort, for when the runtime did not take VHVR's own OpenXR actions (see OpenXRProfiles for the normal
+    // case): one generic set of bindings for every controller, on the legacy XR usages. These are the mod's Touch
+    // bindings (StreamingAssets/SteamVR/bindings_oculus_touch.json), chords and stick directions included, which suit
+    // any controller with a stick, two face buttons, a trigger and a grip. SteamVR reports the buttons that make up a
+    // chord as well as the chord, and so does this (LaserPointerChords counts on it).
     static class OpenXRBindings
     {
         public static readonly List<XRBooleanBinding> Booleans = new List<XRBooleanBinding>();

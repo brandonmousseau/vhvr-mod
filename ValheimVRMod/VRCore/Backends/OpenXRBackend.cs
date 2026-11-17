@@ -11,9 +11,10 @@ using static ValheimVRMod.Utilities.LogUtils;
 namespace ValheimVRMod.VRCore.Backends
 {
     // The headset and controllers through the system's OpenXR runtime instead of SteamVR: head tracking, stereo
-    // rendering, the hands, laser pointers and actions with the default bindings of the controller (see
-    // OpenXRInputBackend). No haptics, body trackers, finger tracking, binding UI, overlays or system keyboard, so
-    // GetUseOverlayGui() is false whatever the settings say and text is typed on the physical keyboard.
+    // rendering, the hands, laser pointers, and VHVR's actions registered with the runtime, which suggests their
+    // bindings and may let the player rebind them in its own UI (see OpenXRInputBackend). No haptics, body trackers,
+    // finger tracking, overlays or system keyboard, so GetUseOverlayGui() is false whatever the settings say and text
+    // is typed on the physical keyboard.
     //
     // SteamVR must never start under this backend. Nothing here calls into OpenVR, and the SteamVR components of the
     // rig prefab, some of which initialize SteamVR when enabled, are removed before the rig is enabled (see
@@ -39,11 +40,11 @@ namespace ValheimVRMod.VRCore.Backends
             XRManagerSettings manager;
             try
             {
-                manager = OpenXRLoaderSetup.CreateManager();
+                manager = OpenXRLoaderSetup.CreateManager(input.BuildManifest());
             }
             catch (Exception e) when (e is FileNotFoundException || e is TypeLoadException)
             {
-                LogError("The OpenXR plugin (Unity.XR.OpenXR.dll in valheim_Data\\Managed) could not be loaded: " + e.Message);
+                LogError("The OpenXR plugin (Unity.XR.OpenXR.dll and VHVR.OpenXR.dll in valheim_Data\\Managed) could not be loaded: " + e.Message);
                 return false;
             }
             if (manager == null || !XRManagementHelper.InitializeLoaders(manager))

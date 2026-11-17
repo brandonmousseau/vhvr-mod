@@ -16,3 +16,7 @@ licensed as described in `LICENSE.md` (copied from the package):
 
 To refresh them (a new package version, or a Unity upgrade of the game), update the version and SHA-1 in
 `scripts/Build-OpenXRPlugin.ps1` and run it; it writes here.
+
+VHVR's own OpenXR actions, `VHVR.OpenXR.dll` (see `VHVR.OpenXR/VhvrActionsFeature.cs`), are not checked in:
+`ValheimVRMod.csproj` builds the dll from `VHVR.OpenXR/` against the checked-in `Unity.XR.OpenXR.dll` before the mod,
+and `make-release.cmd` copies it next to `Unity.XR.OpenXR.dll` into `Valheim_Data/Managed`.
