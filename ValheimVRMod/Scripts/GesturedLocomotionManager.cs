@@ -538,7 +538,7 @@ namespace ValheimVRMod.Scripts
 
             private bool IsStepping()
             {
-                if (!VHVRConfig.TrackFeet())
+                if (!VRPlayer.areFeetTracked)
                 {
                     return false;
                 }
@@ -684,7 +684,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
-                if (!VHVRConfig.IsGesturedWalkRunEnabled() || !VHVRConfig.TrackFeet() || !VRInputActions.valheim_StopGesturedLocomotion.activeBinding)
+                if (!VHVRConfig.IsGesturedWalkRunEnabled() || !VRPlayer.areFeetTracked || !VRInputActions.valheim_StopGesturedLocomotion.activeBinding)
                 {
                     pace = Pace.STOP;
                     return Vector3.zero;
@@ -837,7 +837,7 @@ namespace ValheimVRMod.Scripts
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
                 if (!VHVRConfig.IsGesturedWalkRunEnabled() ||
-                    !VHVRConfig.TrackFeet() ||
+                    !VRPlayer.areFeetTracked ||
                     !VRInputActions.valheim_StopGesturedLocomotion.activeBinding ||
                     Player.m_localPlayer.m_attached ||
                     VRInputActions.valheim_StopGesturedLocomotion.GetState(VRInputSource.Any))

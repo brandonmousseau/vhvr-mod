@@ -77,7 +77,7 @@ namespace ValheimVRMod.Scripts
             Player player = Player.m_localPlayer;
             if (!VRPlayer.inFirstPerson ||
                 transform.parent == null ||
-                !VHVRConfig.TrackFeet() ||
+                !VRPlayer.areFeetTracked ||
                 player == null ||
                 player.IsRiding() ||
                 player.IsSitting())

@@ -438,6 +438,15 @@ namespace ValheimVRMod.VRCore
         public static Transform leftFoot { get; private set; }
         public static Transform rightFoot { get; private set; }
 
+        // Foot tracking is configured (forced index or auto) AND both feet were resolved at caliberation. With auto
+        // and no foot trackers found, caliberateFeet() leaves leftFoot/rightFoot unparented, stuck at a stale world
+        // position; VHVRConfig.TrackFeet() alone would still pin the legs there. Caliberation itself keeps using
+        // TrackFeet() so that a recenter retries detection.
+        public static bool areFeetTracked =>
+            VHVRConfig.TrackFeet() &&
+            leftFoot != null && rightFoot != null &&
+            leftFoot.parent != null && rightFoot.parent != null;
+
         /// <summary>
         /// Recenters the head position on the character body. Head position is re-initialized on all
         /// sorts of events (loading, respawning, attaching to a chair/ship/mount), most of which are
@@ -1549,7 +1558,7 @@ namespace ValheimVRMod.VRCore
                     }
                     offset += Vector3.forward * 0.0625f; // Move slightly backward to position on neck;
                 }
-                else if (!VHVRConfig.TrackFeet())
+                else if (!areFeetTracked)
                 {
                     offset -= Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
                 }
@@ -1775,7 +1784,7 @@ namespace ValheimVRMod.VRCore
             bool useAnimatedPelvis = (player.IsAttached() || player.IsSwimming()) && !shouldOverrideLowerBodyWithIK();
 
             if (useAnimatedPelvis ||
-                (!VHVRConfig.TrackFeet() && (player.IsSneaking() || player.IsSitting() || !isFreeStanding)))
+                (!areFeetTracked && (player.IsSneaking() || player.IsSitting() || !isFreeStanding)))
             {
                 vrikRef.solver.spine.pelvisPositionWeight = 0;
                 pelvis.position = vrikRef.references.pelvis.position;
@@ -1795,7 +1804,7 @@ namespace ValheimVRMod.VRCore
             else
             {
                 Vector3 pelvisFacing = Vector3.ProjectOnPlane(trackedPelvis.forward, player.transform.up);
-                if (isFreeStanding && !VHVRConfig.TrackFeet())
+                if (isFreeStanding && !areFeetTracked)
                 {
                     pelvis.rotation = Quaternion.LookRotation(pelvisFacing, player.transform.up);
                 }
@@ -1825,7 +1834,7 @@ namespace ValheimVRMod.VRCore
         {
             var player = Player.m_localPlayer;
             return VHVRConfig.IKOverrideLowerBody() &&
-                VHVRConfig.TrackFeet() &&
+                areFeetTracked &&
                 attachedToPlayer &&
                 player != null &&
                 !player.InDodge() &&
@@ -1839,7 +1848,7 @@ namespace ValheimVRMod.VRCore
                 return true;
             }
 
-            if (!VHVRConfig.TrackFeet() || !attachedToPlayer || Player.m_localPlayer == null ||
+            if (!areFeetTracked || !attachedToPlayer || Player.m_localPlayer == null ||
                 Player.m_localPlayer.IsAttached() || Player.m_localPlayer.IsSwimming())
             {
                 return false;
@@ -2566,7 +2575,7 @@ namespace ValheimVRMod.VRCore
 
             if (VHVRConfig.IsHipTrackingEnabled())
             {
-                if (VHVRConfig.TrackFeet())
+                if (areFeetTracked)
                 {
                     Vector3 pelvisFacing = Vector3.ProjectOnPlane(trackedPelvis.forward, _vrCameraRig.up);
                     if (Vector3.Dot(leftFoot.position - trackedPelvis.position, pelvisFacing) > 0.3f &&
