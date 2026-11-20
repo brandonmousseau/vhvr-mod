@@ -59,7 +59,13 @@ namespace ValheimVRMod.VRCore.Backends
             readonly SteamVRRigBackend rig;
             SteamVR_Action_Vibration nativeHaptic;
             VRHapticAction haptic;
-            public HandAdapter(Hand hand, SteamVRRigBackend rig) : base(hand) { this.hand = hand; this.rig = rig; }
+            readonly SteamVRHandJoints joints;
+            public HandAdapter(Hand hand, SteamVRRigBackend rig) : base(hand)
+            {
+                this.hand = hand;
+                this.rig = rig;
+                joints = new SteamVRHandJoints(hand);
+            }
             public override bool isActive => hand.isActive;
             public override bool isPoseValid => hand.isPoseValid;
             public override VRHand otherHand => rig.Wrap(hand.otherHand);
@@ -79,6 +85,10 @@ namespace ValheimVRMod.VRCore.Backends
             public override Vector3 GetTrackedObjectVelocity() => hand.GetTrackedObjectVelocity();
             public override Vector3 GetTrackedObjectAngularVelocity() => hand.GetTrackedObjectAngularVelocity();
             public override void SetVisibility(bool visible) => hand.SetVisibility(visible);
+            public override bool TryGetHandJoints(out Quaternion[] rotations, out bool[] valid) =>
+                joints.TryGet(out rotations, out valid);
+            // The glove's bones map onto the character's as they are (see SteamVRHandJoints).
+            public override VRHandJointFrame handJointFrame => VRHandJointFrame.CharacterBone;
         }
         sealed class PointerAdapter : VRLaserPointer
         {

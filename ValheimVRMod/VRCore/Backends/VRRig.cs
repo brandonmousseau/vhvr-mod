@@ -52,6 +52,34 @@ namespace ValheimVRMod.VRCore.Backends
         public abstract Vector3 GetTrackedObjectVelocity();
         public abstract Vector3 GetTrackedObjectAngularVelocity();
         public abstract void SetVisibility(bool visible);
+        // The player's hand joints, the one source of finger poses for HandGesture: the world rotation of each joint,
+        // indexed by VRHandJoint, in the frame handJointFrame says; valid[j] whether joint j is known. False while the
+        // hand is not tracked or its joints are not known. The arrays belong to the backend and are only good until
+        // the next call.
+        public abstract bool TryGetHandJoints(out Quaternion[] rotations, out bool[] valid);
+        public abstract VRHandJointFrame handJointFrame { get; }
+    }
+
+    public enum VRHandJointFrame
+    {
+        // The rotation the player character's finger bone takes as it is: a source already fitted to the character.
+        CharacterBone,
+        // +Z along the bone towards the fingertip, +Y out of the back of the hand (the thumbnail for the thumb), which
+        // HandGesture fits to the character's bones.
+        Anatomical,
+    }
+
+    // The joints of a hand as OpenXR's XR_EXT_hand_tracking numbers them, used by every backend. Each joint's rotation
+    // is that of the bone that starts at it.
+    public enum VRHandJoint
+    {
+        Palm, Wrist,
+        ThumbMetacarpal, ThumbProximal, ThumbDistal, ThumbTip,
+        IndexMetacarpal, IndexProximal, IndexIntermediate, IndexDistal, IndexTip,
+        MiddleMetacarpal, MiddleProximal, MiddleIntermediate, MiddleDistal, MiddleTip,
+        RingMetacarpal, RingProximal, RingIntermediate, RingDistal, RingTip,
+        LittleMetacarpal, LittleProximal, LittleIntermediate, LittleDistal, LittleTip,
+        Count
     }
     public struct VRPointerEventArgs
     {
