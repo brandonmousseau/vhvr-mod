@@ -27,6 +27,8 @@ namespace RootMotion.FinalIK {
 
 			[HideInInspector] public VirtualBone[] bones = new VirtualBone[0];
 			protected bool initiated;
+			// Set by IKSolverVR. Targets are in world space, so it is subtracted from them. See IKSolverVR.solverOrigin.
+			[NonSerialized] public Vector3 solverOrigin;
 			protected Vector3 rootPosition;
 			protected Quaternion rootRotation = Quaternion.identity;
 			protected int index = -1;
