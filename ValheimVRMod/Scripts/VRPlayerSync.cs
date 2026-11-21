@@ -496,6 +496,10 @@ namespace ValheimVRMod.Scripts {
             vrikSync =
                 VrikCreator.initialize(
                     gameObject, leftHand.transform, rightHand.transform, camera.transform, pelvis.transform, leftFoot.transform, rightFoot.transform);
+            if (vrikSync != null)
+            {
+                VrikVisualSmoother.Attach(vrikSync);
+            }
             VrikCreator.resetVrikHandTransform(player);
             if (vrikSync != null && GetComponent<RemoteClothRemover>() == null)
             {
