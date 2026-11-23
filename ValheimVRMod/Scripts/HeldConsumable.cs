@@ -9,6 +9,7 @@ namespace ValheimVRMod.Scripts
     // mouth. The food is shown with the same hand item visual that vanilla shows for a moment after eating.
     //
     // It goes into the off hand if only that one is free, and into the main hand otherwise, holstering what is in it.
+    // A fist weapon counts as taking both hands.
     public class HeldConsumable : MonoBehaviour
     {
         // Where the mouth is relative to the headset.
@@ -71,7 +72,11 @@ namespace ValheimVRMod.Scripts
             else
             {
                 Clear();
-                useOffHand = player.m_rightItem != null && player.m_leftItem == null;
+                // Fist weapons (claws) are worn on both hands while only taking the main hand slot, so the off hand
+                // is not actually free: the food goes into the main hand, holstering the fist weapon.
+                useOffHand =
+                    player.m_rightItem != null && player.m_leftItem == null &&
+                    EquipScript.CurrentMainHandEquipType() != EquipType.Claws;
                 if (!useOffHand && player.m_rightItem != null)
                 {
                     hadMainHandItem = true;
