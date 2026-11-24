@@ -270,6 +270,7 @@ namespace ValheimVRMod.VRCore.Backends
             public override bool TryGetHandJoints(out Quaternion[] rotations, out bool[] valid) =>
                 OpenXRHandJoints.TryGet(hand.Hand, hand.transform.parent, out rotations, out valid);
             public override VRHandJointFrame handJointFrame => VRHandJointFrame.Anatomical;
+            public override bool handJointsFromController => OpenXRHandJoints.IsFromController(hand.Hand);
         }
 
         sealed class PointerView : VRLaserPointer

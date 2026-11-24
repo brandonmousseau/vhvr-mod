@@ -58,6 +58,9 @@ namespace ValheimVRMod.VRCore.Backends
         // the next call.
         public abstract bool TryGetHandJoints(out Quaternion[] rotations, out bool[] valid);
         public abstract VRHandJointFrame handJointFrame { get; }
+        // Whether the last joints TryGetHandJoints gave were made up by the runtime from a controller rather than
+        // tracked from the hand itself.
+        public virtual bool handJointsFromController => false;
     }
 
     public enum VRHandJointFrame

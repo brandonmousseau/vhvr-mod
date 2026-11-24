@@ -15,6 +15,7 @@ namespace ValheimVRMod.VRCore.Backends
         private static readonly Quaternion[][] world = { new Quaternion[Count], new Quaternion[Count] };
         private static readonly int[] readFrame = { -1, -1 };
         private static readonly bool[] tracked = new bool[2];
+        private static readonly int[] source = new int[2];
         // What was last logged per hand: -1 not tracked, otherwise the source.
         private static readonly int[] loggedState = { int.MinValue, int.MinValue };
 
@@ -44,9 +45,14 @@ namespace ValheimVRMod.VRCore.Backends
             return true;
         }
 
+        // Whether the hand's joints, as last read, were made up by the runtime from its controller.
+        public static bool IsFromController(XRHand hand) =>
+            tracked[(int)hand] && source[(int)hand] == VHVR.OpenXR.VhvrHandTrackingFeature.SourceController;
+
         private static bool read(int h)
         {
             bool located = OpenXRLoaderSetup.LocateHandJoints(h, raw[h], rawValid[h], out int source);
+            OpenXRHandJoints.source[h] = located ? source : 0;
             bool ok = located && rawValid[h][(int)VRHandJoint.Palm];
             int state = ok ? source : -1;
             if (state != loggedState[h])
