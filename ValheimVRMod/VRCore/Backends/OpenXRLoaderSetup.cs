@@ -102,6 +102,7 @@ namespace ValheimVRMod.VRCore.Backends
                 typeof(MicrosoftMotionControllerProfile),
                 typeof(KHRSimpleControllerProfile),
                 typeof(VHVR.OpenXR.VhvrActionsFeature),
+                typeof(VHVR.OpenXR.VhvrHandTrackingFeature),
             };
             // Filled in from the feature's attribute when a project is built, and only used to sort and log.
             FieldInfo nameUi = typeof(OpenXRFeature).GetField("nameUi", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -172,6 +173,12 @@ namespace ValheimVRMod.VRCore.Backends
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string CurrentInteractionProfile(int hand) => VHVR.OpenXR.VhvrActionsFeature.CurrentProfile(hand);
+
+        // The runtime's hand joints (see VhvrHandTrackingFeature): orientations as x, y, z, w per joint, in OpenXR's
+        // convention. source: 0 unknown, 1 bare hand, 2 controller.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool LocateHandJoints(int hand, float[] orientations, bool[] valid, out int source) =>
+            VHVR.OpenXR.VhvrHandTrackingFeature.LocateHand(hand, orientations, valid, out source);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void LogRuntime()

@@ -192,8 +192,11 @@ namespace VHVR.OpenXR
             public IntPtr next;
         }
 
+        // Shared by every VHVR feature that hooks the function lookup. When one feature's hook is next in the chain of
+        // another, the pointer it is handed is that feature's own delegate's, and Mono's GetDelegateForFunctionPointer
+        // gives back that same delegate rather than a new one: of any other delegate type, the cast to it fails.
         [UnmanagedFunctionPointer(CallingConvention.Winapi)]
-        private delegate int GetInstanceProcAddrFn(ulong instance, IntPtr name, out IntPtr function);
+        internal delegate int GetInstanceProcAddrFn(ulong instance, IntPtr name, out IntPtr function);
         [UnmanagedFunctionPointer(CallingConvention.Winapi)]
         private delegate int StringToPathFn(ulong instance, [MarshalAs(UnmanagedType.LPStr)] string path, out ulong xrPath);
         [UnmanagedFunctionPointer(CallingConvention.Winapi)]

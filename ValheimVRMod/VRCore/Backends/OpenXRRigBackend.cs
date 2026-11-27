@@ -267,6 +267,10 @@ namespace ValheimVRMod.VRCore.Backends
             public override Vector3 GetTrackedObjectAngularVelocity() => isActive ? hand.GetAngularVelocity() : Vector3.zero;
             // There is no controller or hand model to show or hide.
             public override void SetVisibility(bool visible) { }
+            public override bool TryGetHandJoints(out Quaternion[] rotations, out bool[] valid) =>
+                OpenXRHandJoints.TryGet(hand.Hand, hand.transform.parent, out rotations, out valid);
+            public override VRHandJointFrame handJointFrame => VRHandJointFrame.Anatomical;
+            public override bool handJointsFromController => OpenXRHandJoints.IsFromController(hand.Hand);
         }
 
         sealed class PointerView : VRLaserPointer

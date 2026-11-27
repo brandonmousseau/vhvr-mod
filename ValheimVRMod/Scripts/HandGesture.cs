@@ -5,15 +5,32 @@ using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
     public class HandGesture : MonoBehaviour {
-        
+
+        // The character's finger bones, by the names it may have, in order from the thumb, with the joints that drive
+        // the first of them and the last one a finger can go to. The bones after the first follow on the next joints.
+        internal static readonly string[][] fingerBoneNames =
+        {
+            new[] { "LeftHandThumb1", "RightHandThumb1" }, new[] { "LeftHandIndex1", "RightHandIndex1" },
+            new[] { "LeftHandMiddle1", "RightHandMiddle1" }, new[] { "LeftHandRing1", "RightHandRing1" },
+            new[] { "LeftHandPinky1", "RightHandPinky1" },
+        };
+        private static readonly VRHandJoint[] fingerFirstJoints =
+        {
+            VRHandJoint.ThumbProximal, VRHandJoint.IndexProximal, VRHandJoint.MiddleProximal,
+            VRHandJoint.RingProximal, VRHandJoint.LittleProximal,
+        };
+        internal static readonly VRHandJoint[] fingerTips =
+        {
+            VRHandJoint.ThumbTip, VRHandJoint.IndexTip, VRHandJoint.MiddleTip, VRHandJoint.RingTip, VRHandJoint.LittleTip,
+        };
+
+        // Fits the joints of sources in VRHandJointFrame.Anatomical to this hand, made when first needed.
+        private AnatomicalFingerPoser anatomicalPoser;
+
         private bool isRightHand;
         private bool isMainHand { get { return isRightHand ^ !VRPlayer.isRightHandMainWeaponHand; } }
         private Quaternion handFixedRotation;
         private VRHand _sourceHand;
-        private Transform sourceTransform;
-        // The wrist of the other hand, which is the one that drives this hand in the barber mirror.
-        private Transform mirrorSourceTransform;
-        private bool mirroringFingers;
 
         public VRHand sourceHand {
             get
@@ -23,7 +40,6 @@ namespace ValheimVRMod.Scripts {
             set {
                 _sourceHand = value;
                 isRightHand = (_sourceHand == VRPlayer.rightHand);
-                ensureSourceTransform();
             }
         }
 
@@ -104,100 +120,63 @@ namespace ValheimVRMod.Scripts {
             updateFingerRotations(mirrored);
         }
 
-        private bool ensureSourceTransform()
-        {
-            if (sourceTransform == null) {
-                sourceTransform = findWrist(sourceHand);
-            }
-            return sourceTransform != null;
-        }
-
-        private bool ensureMirrorSourceTransform()
-        {
-            if (mirrorSourceTransform == null && sourceHand != null) {
-                mirrorSourceTransform = findWrist(sourceHand.otherHand);
-            }
-            return mirrorSourceTransform != null;
-        }
-
-        private static Transform findWrist(VRHand hand)
-        {
-            if (hand == null)
-            {
-                return null;
-            }
-            Transform wrist = null;
-            foreach (var t in hand.GetComponentsInChildren<Transform>())
-            {
-                if (t.name == "wrist_r")
-                {
-                    wrist = t;
-                }
-            }
-            return wrist;
-        }
-
-        // When mirrored, the fingers follow those of the user's opposite hand reflected in the barber mirror, like
-        // the hand itself does.
+        // Poses the fingers from the backend's hand joints (see VRHand.TryGetHandJoints): each finger bone takes the
+        // rotation of its joint, down the finger for as long as both go. When mirrored, the fingers follow those of the
+        // user's opposite hand reflected in the barber mirror, like the hand itself does.
         private void updateFingerRotations(bool mirrored)
         {
-            if (mirrored ? !ensureMirrorSourceTransform() : !ensureSourceTransform())
+            VRHand source = mirrored ? sourceHand?.otherHand : sourceHand;
+            if (source == null || !source.TryGetHandJoints(out Quaternion[] joints, out bool[] valid))
             {
                 return;
             }
-            Transform sourceTransform = mirrored ? mirrorSourceTransform : this.sourceTransform;
-            mirroringFingers = mirrored;
+            if (source.handJointFrame == VRHandJointFrame.Anatomical)
+            {
+                if (anatomicalPoser == null)
+                {
+                    anatomicalPoser = new AnatomicalFingerPoser(transform, isRightHand);
+                }
+                anatomicalPoser.Pose(joints, valid, mirrored, source.handJointsFromController);
+                return;
+            }
 
             for (int i = 0; i < transform.childCount; i++) {
 
                 var child = transform.GetChild(i);
-                switch (child.name) {
-                    
-                    case ("LeftHandThumb1"):
-                    case ("RightHandThumb1"):
-                        updateFingerPart(sourceTransform.GetChild(0).GetChild(0), child);
+                int finger = fingerOf(child.name);
+                if (finger < 0)
+                {
+                    continue;
+                }
+                Transform bone = child;
+                for (int joint = (int)fingerFirstJoints[finger]; joint <= (int)fingerTips[finger] && valid[joint]; joint++)
+                {
+                    bone.rotation = mirrored ? Mirror(joints[joint]) : joints[joint];
+                    if (bone.childCount == 0)
+                    {
                         break;
-                    
-                    case ("LeftHandIndex1"):
-                    case ("RightHandIndex1"):
-                        updateFingerPart(sourceTransform.GetChild(1).GetChild(0), child);
-                        break;
-                    
-                    case ("LeftHandMiddle1"):
-                    case ("RightHandMiddle1"):
-                        updateFingerPart(sourceTransform.GetChild(2).GetChild(0), child);
-                        break;
-
-                    case ("LeftHandRing1"):
-                    case ("RightHandRing1"):
-                        updateFingerPart(sourceTransform.GetChild(3).GetChild(0), child);
-                        break;
-                    
-                    case ("LeftHandPinky1"):
-                    case ("RightHandPinky1"):
-                        updateFingerPart(sourceTransform.GetChild(4).GetChild(0), child);
-                        break;
+                    }
+                    bone = bone.GetChild(0);
                 }
             }
         }
 
-        private void updateFingerPart(Transform source, Transform target)
-        {
-            if (mirroringFingers)
-            {
-                // The source is the opposite hand, whose reflection is a hand of this side.
-                target.rotation = Quaternion.LookRotation(
-                    BarberMirror.ReflectDirection(-source.up),
-                    BarberMirror.ReflectDirection(isRightHand ? -source.right : source.right));
-            }
-            else
-            {
-                target.rotation = Quaternion.LookRotation(-source.up, isRightHand ? source.right : -source.right);
-            }
+        // A joint rotation of the user's opposite hand as its reflection in the barber mirror, a hand of this side.
+        internal static Quaternion Mirror(Quaternion rotation) =>
+            Quaternion.LookRotation(
+                BarberMirror.ReflectDirection(rotation * Vector3.forward),
+                BarberMirror.ReflectDirection(rotation * Vector3.up));
 
-            if (source.childCount > 0 && target.childCount > 0) {
-                updateFingerPart(source.GetChild(0), target.GetChild(0));
+        internal static int fingerOf(string boneName)
+        {
+            for (int finger = 0; finger < fingerBoneNames.Length; finger++)
+            {
+                if (boneName == fingerBoneNames[finger][0] || boneName == fingerBoneNames[finger][1])
+                {
+                    return finger;
+                }
             }
+            return -1;
         }
     }
 }
